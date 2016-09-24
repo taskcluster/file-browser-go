@@ -23,7 +23,7 @@ func ErrorResultSet (e error) *ResultSet {
 
 func NewListResultSet (d, f []string, path string, e error) *ResultSet {
 	return &ResultSet{
-		Cmd: "ls",
+		Cmd: "List",
 		Path: path,
 		Dirs: d,
 		Files: f,
@@ -31,12 +31,6 @@ func NewListResultSet (d, f []string, path string, e error) *ResultSet {
 	}
 }
 
-func NewCatResultSet(path string) *ResultSet {
-	return &ResultSet{
-		Cmd: "cat",
-		Path: path,
-	}
-}
 
 func EmptyResultSet () *ResultSet {
 	return &ResultSet{};

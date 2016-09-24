@@ -1,7 +1,6 @@
 package main;
 
 import (
-	"fmt";
 	"os";
 	"bufio";
 	"encoding/json";
@@ -16,11 +15,9 @@ func main(){
 	encoder := msgpack.NewEncoder(os.Stdout);
 	var cmd browser.Command;
 	var err error;
-	for cmd.Cmd != "exit" && err == nil {
+	for cmd.Cmd != "exit" {
 		err = decoder.Decode(&cmd);
-		if err != nil {
-			fmt.Println(err.Error());
-		}else{
+		if err == nil{
 			res := browser.Run(cmd);
 			if res == nil {
 				break;

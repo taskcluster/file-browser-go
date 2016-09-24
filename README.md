@@ -6,15 +6,19 @@ Input format:
 ```
 {
 	"Cmd": "<command to run>",
-	"Args": [ <arguments> ]
+	"Args": [ <arguments> ],
+	"Data": [] //Byte array
 }
 
 eg.
 
-{ "Cmd": "ls", "Args": ["/"] }
+{ "Cmd": "List", "Args": ["/"] }
+{ "Cmd": "PutFile", "Args": ["/home/Hello.txt"], "Data":[72, 101, 108, 108, 111] }
+{ "Cmd": "GetFile", "Args": ["/home/Hello.txt"] }
 
 ```
 
 Currently supports:
-*	ls
-*	cat
+*	List
+*	GetFile
+*	PutFile

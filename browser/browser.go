@@ -8,6 +8,7 @@ import (
 type Command struct {
 	Cmd string;
 	Args []string;
+	Data []byte;
 }
 
 // Utility functions
@@ -33,21 +34,21 @@ func ValidateDirPath (dir *string) bool {
 }
 
 func Run (cmd Command) *ResultSet{
+	if len(cmd.Args) == 0 {
+		return EmptyResultSet();
+	}
 	switch cmd.Cmd{
-	case "ls":
-		if len(cmd.Args) == 0{
-			return EmptyResultSet();
-		}
+	case "List":
 		return List(cmd.Args[0]);
 
-	case "cat":
-		if len(cmd.Args) == 0{
-			return EmptyResultSet();
-		}
-		return Cat2(cmd.Args[0]);
+	case "GetFile":
+		return GetFile(cmd.Args[0]);
 
-	case "exit":
+	case "PutFile":
+		return PutFile(cmd.Args[0], cmd.Data);
+
+	case "Exit":
 		return nil;
 	}
-	return nil;
+	return EmptyResultSet();
 }

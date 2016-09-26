@@ -6,13 +6,13 @@ import (
 	"encoding/json";
 
 	"github.com/taskcluster/file-browser-go/browser";
-	"gopkg.in/vmihailenco/msgpack.v2";
+	//"gopkg.in/vmihailenco/msgpack.v2";
 )
 
 func main(){
 	reader := bufio.NewReader(os.Stdin);
 	decoder := json.NewDecoder(reader);
-	encoder := msgpack.NewEncoder(os.Stdout);
+	encoder := json.NewEncoder(os.Stdout);
 	var cmd browser.Command;
 	var err error;
 	for cmd.Cmd != "exit" {

@@ -11,29 +11,16 @@ type ResultSet struct {
 	Path string `json:"Path"`
 	Dirs []string `json:"Directories"`
 	Files []string `json:"Files"`
-	Err error `json:"Error"`
+	Err string `json:"Error"`
 	Data *FileData `json:"FileData"`
 }
 
-func ErrorResultSet (e error) *ResultSet {
+func FailedResultSet (cmd, path string, err string) *ResultSet {
 	return &ResultSet{
-		Err: e,
-	}
-}
-
-func NewListResultSet (d, f []string, path string, e error) *ResultSet {
-	return &ResultSet{
-		Cmd: "List",
+		Cmd: cmd,
 		Path: path,
-		Dirs: d,
-		Files: f,
-		Err: e,
+		Err: err,
 	}
-}
-
-
-func EmptyResultSet () *ResultSet {
-	return &ResultSet{};
 }
 
 func (r *ResultSet) GetDirs() []string {
@@ -44,6 +31,6 @@ func (r *ResultSet) GetFiles() []string {
 	return r.Files;
 }
 
-func (r *ResultSet) GetError() error {
+func (r *ResultSet) GetError() string {
 	return r.Err;
 }

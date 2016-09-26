@@ -1,34 +1,15 @@
 package browser;
 
 import (
-	"io/ioutil";
 	"os";
-	"path/filepath";
-	"gopkg.in/vmihailenco/msgpack.v2";
+	"encoding/json";
+	// "fmt";
+	// "gopkg.in/vmihailenco/msgpack.v2";
 )
 
-// TODO: List, GetFile, PutFile, RunFile
+// TODO: GetFile, PutFile, RunFile
 
 const CHUNKSIZE = 2048
-
-func List(dir string) *ResultSet {
-	dirs, files := []string{}, []string{};
-	if !ValidateDirPath(&dir)|| !IsDir(dir) {
-		return EmptyResultSet();
-	}
-	finfo, err := ioutil.ReadDir(dir);
-	if err != nil {
-		return EmptyResultSet();
-	}
-	for _, f := range finfo {
-		if f.IsDir() {
-			dirs = append(dirs, f.Name());
-		}else{
-			files = append(files, f.Name());
-		}
-	}
-	return NewListResultSet(dirs, files, dir, nil);
-}
 
 /* GetFile
 	GetFile will write the content of files to stdout.
@@ -58,19 +39,19 @@ func GetFileDiv (file *os.File) int64 {
 	return finfo.Size() / CHUNKSIZE + 1;
 }
 
-func GetFile (dir string ) *ResultSet{
-	if !ValidateDirPath(&dir) || IsDir(dir) {
-		return EmptyResultSet();
+func GetFile (path string ) *ResultSet{
+	if !ValidateDirPath(&path) || IsDir(path) {
+		return FailedResultSet("GetFile", path, "Not a valid path.");
 	}
-	file, err := os.Open(dir);
+	file, err := os.Open(path);
 	if err != nil {
-		return EmptyResultSet();
+		return FailedResultSet("GetFile",path, err.Error());
 	}
 	maxdiv := GetFileDiv(file);
-	defer WritePiecesToStdout(dir, file, maxdiv);
+	defer WritePiecesToStdout(path, file, maxdiv);
 	return &ResultSet{
 		Cmd: "GetFile",
-		Path: dir,
+		Path: path,
 		Data: &FileData{
 			TotalPieces: maxdiv,
 			CurrentPiece: 0,
@@ -79,16 +60,17 @@ func GetFile (dir string ) *ResultSet{
 	}
 }
 
-func WritePiecesToStdout(dir string, file *os.File, maxdiv int64){
-	enc := msgpack.NewEncoder(os.Stdout);
+func WritePiecesToStdout(path string, file *os.File, maxdiv int64){
+	enc := json.NewEncoder(os.Stdout);
 	buff := make([]byte, CHUNKSIZE);
 	var i int64;
 	go func(){
+		defer file.Close();
 		for i = 1; i <= maxdiv; i++ {
 			_, _ = file.Read(buff);
 			res := &ResultSet{
 				Cmd: "GetFile",
-				Path: dir,
+				Path: path,
 				Data: &FileData{
 					TotalPieces: maxdiv,
 					CurrentPiece: i,
@@ -116,12 +98,10 @@ Return resultset
 */
 
 func PutFile(path string, data []byte) *ResultSet {
-	if !IsDir(filepath.Dir(path)) {
-		return EmptyResultSet();
-	}
 	file, err := os.OpenFile(path, os.O_CREATE | os.O_APPEND | os.O_WRONLY, 0666);
 	if err != nil {
-		return EmptyResultSet();
+		// fmt.Println(err.Error());
+		return FailedResultSet("PutFile",path, err.Error());
 	}
 	defer file.Close();
 	_,_ = file.Write(data);
@@ -130,3 +110,4 @@ func PutFile(path string, data []byte) *ResultSet {
 		Path: path,
 	};
 }
+

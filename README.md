@@ -22,3 +22,7 @@ Currently supports:
 *	List
 *	GetFile
 *	PutFile
+*	MakeDir
+*	Remove
+*	Move
+*	Copy

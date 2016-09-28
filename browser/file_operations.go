@@ -39,7 +39,7 @@ func GetFileDiv (file *os.File) int64 {
 	return finfo.Size() / CHUNKSIZE + 1;
 }
 
-func GetFile (path string ) *ResultSet{
+func GetFile (path string ) interface{} {
 	if !ValidateDirPath(&path) || IsDir(path) {
 		return FailedResultSet("GetFile", path, "Not a valid path.");
 	}
@@ -97,7 +97,7 @@ else append bytes to end of file.
 Return resultset
 */
 
-func PutFile(path string, data []byte) *ResultSet {
+func PutFile(path string, data []byte) interface{} {
 	file, err := os.OpenFile(path, os.O_CREATE | os.O_APPEND | os.O_WRONLY, 0666);
 	if err != nil {
 		// fmt.Println(err.Error());

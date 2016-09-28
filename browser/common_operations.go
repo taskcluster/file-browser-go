@@ -5,9 +5,10 @@ import (
 	"io";
 	"path/filepath";
 	"encoding/json";
+	"container/list";
 )
 
-func Move (oldpath, newpath string) *ResultSet {
+func Move (oldpath, newpath string) interface{} {
 	if IsLocked[oldpath] {
 		return FailedResultSet("Move", oldpath, "Path locked for another operation.");
 	}
@@ -29,7 +30,7 @@ func Move (oldpath, newpath string) *ResultSet {
 	}
 }
 
-func Remove (path string) *ResultSet {
+func Remove (path string) interface{} {
 	if IsLocked[path] {
 		return FailedResultSet("Move", path, "Path locked for another operation.");
 	}
@@ -45,12 +46,19 @@ func Remove (path string) *ResultSet {
 	};
 }
 
-func Copy (oldpath, newpath string) *ResultSet {
+// Function for copying file/dirs
+
+func Copy (oldpath, newpath string) interface{} {
 	file, err := os.Open(oldpath);
 	if err != nil {
 		return FailedResultSet("Copy", oldpath, err.Error());
 	}
 	file.Close();
+
+	// Add to the wait group before the go routine
+	// to avoid a race condition
+	CopyAdd();
+
 	go CopyUtil(oldpath, newpath);
 	return &ResultSet{
 		Cmd: "Copy Started",
@@ -61,16 +69,19 @@ func Copy (oldpath, newpath string) *ResultSet {
 // BFS copying method
 func CopyUtil (oldpath, newpath string) {
 	enc := json.NewEncoder(os.Stdout);
-	queue := make([]string,0);
+	queue := list.New();
 	failedFiles := make([]string, 0);
 	failedDirs := make([]string, 0);
 	lockedPaths := make([]string,0);
-	queue = append(queue, oldpath);
+	queue.PushBack(oldpath);
 	errStr := "";
+
+	// Release the lock after the goroutine completes
+	defer CopyDone();
 	
-	for len(queue) != 0 {
-		path := queue[0];
-		queue = queue[1:];
+	for queue.Len() > 0 {
+		path := queue.Front().Value.(string);
+		queue.Remove(queue.Front());
 
 		file, err := os.Open(path);
 		if err != nil {
@@ -100,7 +111,7 @@ func CopyUtil (oldpath, newpath string) {
 				continue;
 			}
 			for _, name := range sub {
-				queue = append(queue, filepath.Join(path, name));
+				queue.PushBack(filepath.Join(path,name));
 			}
 		}else{
 			nfile, err := os.OpenFile(npath, os.O_CREATE | os.O_WRONLY, 0777);

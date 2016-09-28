@@ -5,7 +5,7 @@ import (
 	"os";
 )
 
-func List(path string) *ResultSet {
+func List(path string) interface{} {
 	dirs, files := []string{}, []string{};
 	if !ValidateDirPath(&path)|| !IsDir(path) {
 		return FailedResultSet("List",path, "Not a directory.");
@@ -29,7 +29,7 @@ func List(path string) *ResultSet {
 	}
 }
 
-func MakeDirectory (path string) *ResultSet {
+func MakeDirectory (path string) interface{} {
 	if !ValidateDirPath(&path) {
 		return FailedResultSet("MakeDir",path, "Not a valid path.");
 	}

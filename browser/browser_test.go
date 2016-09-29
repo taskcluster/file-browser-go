@@ -59,6 +59,15 @@ func TestList(t *testing.T) {
 func TestMakeDirectoryAndRemove(t *testing.T) {
 	home := os.Getenv("HOME");
 	paths := []string{"/test_folder","/test_folder/sub_folder"};
+
+	defer func() {
+		r := Remove(filepath.Join(home, paths[0])).(*ResultSet);
+		if r.Err != "" {
+			t.Log(r.Err);
+			t.Fail();
+		}
+	}();
+
 	for _, p := range paths {
 		_ = MakeDirectory(filepath.Join(home, p));
 	}
@@ -78,11 +87,6 @@ func TestMakeDirectoryAndRemove(t *testing.T) {
 	}
 	res = List(filepath.Join(home,"/test_folder")).(*ResultSet);
 	if len(res.GetDirs()) == 0 {
-		t.Fail();
-	}
-	res = Remove(filepath.Join(home, paths[0])).(*ResultSet);
-	if res.Err != "" {
-		t.Log(res.Err);
 		t.Fail();
 	}
 }

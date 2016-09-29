@@ -1,14 +1,12 @@
 package browser;
 
-// import "fmt";
-
 type Command struct {
 	Cmd string `json:"cmd"`
 	Args []string `json:"args"`
 	Data []byte `json:"data"`
 }
+
 func ExitBrowser () interface{} {
-	// fmt.Println("Waiting for transfers to complete.");
 	WaitForOperationsToComplete();
 	return nil;
 }

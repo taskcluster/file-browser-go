@@ -68,7 +68,7 @@ func Copy (oldpath, newpath string) interface{} {
 
 // BFS copying method
 func CopyUtil (oldpath, newpath string) {
-	enc := json.NewEncoder(os.Stdout);
+	enc := json.NewEncoder(OutputFile);
 	queue := list.New();
 	failedFiles := make([]string, 0);
 	failedDirs := make([]string, 0);

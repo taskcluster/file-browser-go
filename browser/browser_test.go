@@ -128,7 +128,7 @@ func TestRun(t *testing.T) {
 	}
 
 	for _, cmd := range cmds {
-		ret := Run(cmd);
+		ret := Run(cmd, nil);
 		if ret == nil {
 			break;
 		}

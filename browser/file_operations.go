@@ -61,7 +61,7 @@ func GetFile (path string ) interface{} {
 }
 
 func WritePiecesToStdout(path string, file *os.File, maxdiv int64){
-	enc := json.NewEncoder(os.Stdout);
+	enc := json.NewEncoder(OutputFile);
 	buff := make([]byte, CHUNKSIZE);
 	var i int64;
 	go func(){

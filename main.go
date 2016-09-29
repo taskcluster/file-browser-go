@@ -18,7 +18,7 @@ func main(){
 	for cmd.Cmd != "exit" {
 		err = decoder.Decode(&cmd);
 		if err == nil{
-			res := browser.Run(cmd);
+			res := browser.Run(cmd, nil);
 			if res == nil {
 				break;
 			}

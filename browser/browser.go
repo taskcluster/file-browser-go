@@ -1,5 +1,9 @@
 package browser;
 
+import "os";
+
+var OutputFile *os.File = os.Stdout;
+
 type Command struct {
 	Cmd string `json:"cmd"`
 	Args []string `json:"args"`
@@ -11,7 +15,12 @@ func ExitBrowser () interface{} {
 	return nil;
 }
 
-func Run (cmd Command) interface{} {
+func Run (cmd Command, OutFile *os.File) interface{} {
+	if OutFile == nil {
+		OutputFile = os.Stdout;
+	}else{
+		OutputFile = OutFile;
+	}
 	if cmd.Cmd == "Exit" {
 		return ExitBrowser();
 	}

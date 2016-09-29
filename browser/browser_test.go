@@ -57,14 +57,14 @@ func TestList(t *testing.T) {
 }
 
 func TestMakeDirectoryAndRemove(t *testing.T) {
-	user := os.Getenv("USERHOME");
+	home := os.Getenv("HOME");
 	paths := []string{"/test_folder","/test_folder/sub_folder"};
 	for _, p := range paths {
-		_ = MakeDirectory(filepath.Join(user, p));
+		_ = MakeDirectory(filepath.Join(home, p));
 	}
 	res := List(paths[0]).(*ResultSet);
 	var flag bool = false;
-	res = List(user).(*ResultSet);
+	res = List(home).(*ResultSet);
 	t.Log(res);
 	for _, p := range res.GetDirs() {
 		if p == "test_folder" {
@@ -76,13 +76,42 @@ func TestMakeDirectoryAndRemove(t *testing.T) {
 		t.Logf("Folder /test_folder not created.");
 		t.Fail();
 	}
-	res = List(filepath.Join(user,"/test_folder")).(*ResultSet);
+	res = List(filepath.Join(home,"/test_folder")).(*ResultSet);
 	if len(res.GetDirs()) == 0 {
 		t.Fail();
 	}
-	res = Remove(filepath.Join(user, paths[0])).(*ResultSet);
+	res = Remove(filepath.Join(home, paths[0])).(*ResultSet);
 	if res.Err != "" {
 		t.Log(res.Err);
+		t.Fail();
+	}
+}
+
+func TestCopy (t *testing.T) {
+	// Create a directory for copying
+	home := os.Getenv("HOME");
+	dir := []string{"copy_folder", "copy_folder/sub1",
+	"copy_folder/sub2", "copy_folder/sub1/sub3", 
+	"copy_to"};
+	for _, p := range dir {
+		res := MakeDirectory(filepath.Join(home,p));
+		if err := res.(*ResultSet).Err; err != "" {
+			t.Log(err);
+			t.FailNow();
+		}
+	}
+
+	d1 := filepath.Join(home,"copy_folder");
+	d2 := filepath.Join(home,"copy_to/copy_folder");
+
+	defer func() {
+		_ = Remove(d1);
+		_ = Remove(filepath.Join(home, "copy_to"));
+	}();
+
+	_ = Copy(d1, d2);		
+	WaitForOperationsToComplete();
+	if CompareDirectory(d1,d2) == false {
 		t.Fail();
 	}
 }

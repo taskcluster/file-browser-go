@@ -32,11 +32,23 @@ func CopyDone () {
 	copy_running.Done();
 }
 
-func WaitForOperationsToComplete() {
-	copy_running.Wait();
+// GetFile Lock
+
+var get_file_running sync.WaitGroup;
+
+func LockFile(){
+	get_file_running.Add(1);
+}
+
+func UnlockFile(){
+	get_file_running.Done();
 }
 
 // Utility functions
+func WaitForOperationsToComplete() {
+	copy_running.Wait();
+	get_file_running.Wait();
+}
 
 func IsDir (dir string) bool {
 	file, err := os.Open(dir);

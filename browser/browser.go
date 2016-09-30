@@ -12,46 +12,54 @@ type Command struct {
 
 func ExitBrowser () interface{} {
 	WaitForOperationsToComplete();
-	return nil;
+	return &ResultSet{
+		Cmd:"Exit",
+	}
 }
 
-func Run (cmd Command, OutFile *os.File) interface{} {
-	if OutFile == nil {
-		OutputFile = os.Stdout;
-	}else{
-		OutputFile = OutFile;
-	}
+func Run (cmd Command, out chan interface{} ) {
 	if cmd.Cmd == "Exit" {
-		return ExitBrowser();
+		out <- ExitBrowser();
+		return;
 	}
 	if len(cmd.Args) == 0 {
-		return FailedResultSet(cmd.Cmd,"", "Not enough arguments.");
+		out <-  FailedResultSet(cmd.Cmd,"", "Not enough arguments.");
+		return;
 	}
 	switch cmd.Cmd{
 	case "List":
-		return List(cmd.Args[0]);
+		out <-  List(cmd.Args[0]);
+		return;
 
 	case "GetFile":
-		return GetFile(cmd.Args[0]);
+		GetFile(cmd.Args[0], out);
+		return;
 
 	case "PutFile":
-		return PutFile(cmd.Args[0], cmd.Data);
+		out <-  PutFile(cmd.Args[0], cmd.Data);
+		return;
 
 	case "Move":
 		if len(cmd.Args) < 1 {
-			return FailedResultSet(cmd.Cmd,"","Not enough arguments.");
+			out <-  FailedResultSet(cmd.Cmd,"","Not enough arguments.");
+			return;
 		}
-		return Move(cmd.Args[0], cmd.Args[1]);
+		out <-  Move(cmd.Args[0], cmd.Args[1]);
+		return;
 	case "Copy":
 		if len(cmd.Args) < 1 {
-			return FailedResultSet(cmd.Cmd,"","Not enough arguments.");
+			out <-  FailedResultSet(cmd.Cmd,"","Not enough arguments.");
+			return;
 		}
-		return Copy(cmd.Args[0], cmd.Args[1]);
+		out <-  Copy(cmd.Args[0], cmd.Args[1]);
+		return;
 	case "Remove":
-		return Remove(cmd.Args[0]);
+		out <-  Remove(cmd.Args[0]);
+		return;
 	case "MakeDir":
-		return MakeDirectory(cmd.Args[0]);
+		out <-  MakeDirectory(cmd.Args[0]);
+		return;
 
 	}
-	return FailedResultSet("","","No command specified.");
+	out <-  FailedResultSet("","","No command specified.");
 }

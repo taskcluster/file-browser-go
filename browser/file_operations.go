@@ -2,7 +2,6 @@ package browser;
 
 import (
 	"os";
-	"encoding/json";
 	// "fmt";
 	// "gopkg.in/vmihailenco/msgpack.v2";
 )
@@ -39,17 +38,20 @@ func GetFileDiv (file *os.File) int64 {
 	return finfo.Size() / CHUNKSIZE + 1;
 }
 
-func GetFile (path string ) interface{} {
+func GetFile (path string, out chan interface{}) {
+	LockFile();
+	defer UnlockFile();
 	if !ValidateDirPath(&path) || IsDir(path) {
-		return FailedResultSet("GetFile", path, "Not a valid path.");
+		out <- FailedResultSet("GetFile", path, "Not a valid path.");
+		return;
 	}
 	file, err := os.Open(path);
 	if err != nil {
-		return FailedResultSet("GetFile",path, err.Error());
+		out <- FailedResultSet("GetFile",path, err.Error());
+		return;
 	}
 	maxdiv := GetFileDiv(file);
-	defer WritePiecesToStdout(path, file, maxdiv);
-	return &ResultSet{
+	out <- &ResultSet{
 		Cmd: "GetFile",
 		Path: path,
 		Data: &FileData{
@@ -58,31 +60,26 @@ func GetFile (path string ) interface{} {
 			Data: []byte{},
 		},
 	}
-}
 
-func WritePiecesToStdout(path string, file *os.File, maxdiv int64){
-	enc := json.NewEncoder(OutputFile);
 	buff := make([]byte, CHUNKSIZE);
 	var i int64;
-	go func(){
-		defer file.Close();
-		for i = 1; i <= maxdiv; i++ {
-			_, _ = file.Read(buff);
-			res := &ResultSet{
-				Cmd: "GetFile",
-				Path: path,
-				Data: &FileData{
-					TotalPieces: maxdiv,
-					CurrentPiece: i,
-					Data: buff,
-				},
-			}
-			enc.Encode(res);
+	defer file.Close();
+	for i=1; i <= maxdiv; i++ {
+		_, _ = file.Read(buff);
+		res := &ResultSet{
+			Cmd: "GetFile",
+			Path: path,
+			Data: &FileData{
+				TotalPieces: maxdiv,
+				CurrentPiece: i,
+				Data: buff,
+			},
 		}
 
-	}();
-}
+		out <- res;
 
+	}
+}
 /*
 PutFile:
 Receive command of the form

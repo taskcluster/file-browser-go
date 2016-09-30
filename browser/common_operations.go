@@ -70,22 +70,18 @@ func Copy (oldpath, newpath string) interface{} {
 func CopyUtil (oldpath, newpath string) {
 	enc := json.NewEncoder(OutputFile);
 	queue := list.New();
-	failedFiles := make([]string, 0);
-	failedDirs := make([]string, 0);
 	lockedPaths := make([]string,0);
 	queue.PushBack(oldpath);
 	errStr := "";
 
 	// Release the lock after the goroutine completes
 	defer CopyDone();
-	
 	for queue.Len() > 0 {
 		path := queue.Front().Value.(string);
 		queue.Remove(queue.Front());
 
 		file, err := os.Open(path);
 		if err != nil {
-			failedFiles = append(failedFiles, path);
 			errStr += err.Error() + "\n";
 			continue;
 		}
@@ -100,13 +96,11 @@ func CopyUtil (oldpath, newpath string) {
 		if finfo.IsDir() {
 			err = os.Mkdir(npath, finfo.Mode().Perm());
 			if err != nil {
-				failedDirs = append(failedDirs, path);
 				errStr += err.Error() + "\n";
 				continue;
 			}
 			sub, err := file.Readdirnames(-1);
 			if err != nil {
-				failedDirs = append(failedDirs, path);	
 				errStr += err.Error() + "\n";
 				continue;
 			}
@@ -116,13 +110,11 @@ func CopyUtil (oldpath, newpath string) {
 		}else{
 			nfile, err := os.OpenFile(npath, os.O_CREATE | os.O_WRONLY, 0777);
 			if err != nil {
-				failedFiles = append(failedFiles, path);	
 				errStr += err.Error() + "\n";
 				continue;
 			}
 			_, err = io.Copy(nfile,file);
 			if err != nil {
-				failedFiles = append(failedFiles, path);	
 				errStr += err.Error() + "\n";
 				continue;
 			}
@@ -131,7 +123,6 @@ func CopyUtil (oldpath, newpath string) {
 		}
 		file.Close();
 	}
-	
 	for _, p := range lockedPaths {
 		UnlockPath(p);
 	}
@@ -139,8 +130,6 @@ func CopyUtil (oldpath, newpath string) {
 	res := &ResultSet{
 		Cmd: "Copy Complete",
 		Path: newpath,
-		Files: failedFiles,
-		Dirs: failedDirs,
 		Err: errStr,
 	}
 	enc.Encode(res);

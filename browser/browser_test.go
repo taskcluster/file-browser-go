@@ -45,15 +45,6 @@ func CompareDirectory(root1, root2 string) bool {
 }
 
 func TestList(t *testing.T) {
-	res := List("/home");
-	if len(res.(*ResultSet).GetDirs()) == 0 {
-		t.Fail();
-	}
-	t.Log(res);
-	res = List("Directory/Not/Valid");
-	if len(res.(*ResultSet).GetDirs()) != 0 {
-		t.Fail();
-	}
 }
 
 func TestMakeDirectoryAndRemove(t *testing.T) {
@@ -72,21 +63,9 @@ func TestMakeDirectoryAndRemove(t *testing.T) {
 		_ = MakeDirectory(filepath.Join(home, p));
 	}
 	res := List(paths[0]).(*ResultSet);
-	var flag bool = false;
 	res = List(home).(*ResultSet);
 	t.Log(res);
-	for _, p := range res.GetDirs() {
-		if p == "test_folder" {
-			flag = true;
-			break;
-		}
-	}
-	if !flag {
-		t.Logf("Folder /test_folder not created.");
-		t.Fail();
-	}
-	res = List(filepath.Join(home,"/test_folder")).(*ResultSet);
-	if len(res.GetDirs()) == 0 {
+	if res.Err != "" {
 		t.Fail();
 	}
 }
@@ -95,7 +74,7 @@ func TestCopy (t *testing.T) {
 	// Create a directory for copying
 	home := os.Getenv("HOME");
 	dir := []string{"copy_folder", "copy_folder/sub1",
-	"copy_folder/sub2", "copy_folder/sub1/sub3", 
+	"copy_folder/sub2", "copy_folder/sub1/sub3",
 	"copy_to"};
 	for _, p := range dir {
 		res := MakeDirectory(filepath.Join(home,p));
@@ -113,7 +92,7 @@ func TestCopy (t *testing.T) {
 		_ = Remove(filepath.Join(home, "copy_to"));
 	}();
 
-	_ = Copy(d1, d2);		
+	_ = Copy(d1, d2);
 	WaitForOperationsToComplete();
 	if CompareDirectory(d1,d2) == false {
 		t.Fail();
@@ -126,9 +105,10 @@ func TestRun(t *testing.T) {
 		{ Cmd:"List", Args:[]string{"/var/"}, },
 		{ Cmd:"Exit", Args:[]string{}, },
 	}
-
+	out := make(chan interface{});
 	for _, cmd := range cmds {
-		ret := Run(cmd, nil);
+		Run(cmd, out);
+		ret := <-out;
 		if ret == nil {
 			break;
 		}

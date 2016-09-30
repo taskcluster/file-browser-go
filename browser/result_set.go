@@ -6,12 +6,17 @@ type FileData struct {
 	Data []byte `json:"data"`
 }
 
+type FileInfo struct {
+	Name string  `json:"name"`
+	Size int64 `json:"size"`
+	Dir bool `json:"dir"`
+}
+
 type ResultSet struct {
 	Cmd string `json:"cmd"`
 	Path string `json:"path"`
-	Dirs []string `json:"directories"`
-	Files []string `json:"files"`
 	Err string `json:"error"`
+	Files []FileInfo `json:"files"`
 	Data *FileData `json:"fileData"`
 }
 
@@ -21,16 +26,4 @@ func FailedResultSet (cmd, path string, err string) *ResultSet {
 		Path: path,
 		Err: err,
 	}
-}
-
-func (r *ResultSet) GetDirs() []string {
-	return r.Dirs;
-}
-
-func (r *ResultSet) GetFiles() []string {
-	return r.Files;
-}
-
-func (r *ResultSet) GetError() string {
-	return r.Err;
 }

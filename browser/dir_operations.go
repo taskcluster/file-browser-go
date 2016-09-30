@@ -6,7 +6,6 @@ import (
 )
 
 func List(path string) interface{} {
-	dirs, files := []string{}, []string{};
 	if !ValidateDirPath(&path)|| !IsDir(path) {
 		return FailedResultSet("List",path, "Not a directory.");
 	}
@@ -14,18 +13,18 @@ func List(path string) interface{} {
 	if err != nil {
 		return FailedResultSet("List",path, err.Error());
 	}
+	files := []FileInfo{};
 	for _, f := range finfo {
-		if f.IsDir() {
-			dirs = append(dirs, f.Name());
-		}else{
-			files = append(files, f.Name());
-		}
+		files = append(files, FileInfo{
+			Name: f.Name(),
+			Size: f.Size(),
+			Dir: f.IsDir(),
+		});
 	}
 	return &ResultSet{
-		Dirs: dirs,
-		Files: files,
 		Cmd: "List",
 		Path: path,
+		Files: files,
 	}
 }
 

@@ -6,6 +6,8 @@ import (
 )
 
 func List(path string) interface{} {
+	OpAdd();
+	defer OpDone();
 	if !ValidateDirPath(&path)|| !IsDir(path) {
 		return FailedResultSet("List",path, "Not a directory.");
 	}
@@ -29,6 +31,8 @@ func List(path string) interface{} {
 }
 
 func MakeDirectory (path string) interface{} {
+	OpAdd();
+	defer OpDone();
 	if !ValidateDirPath(&path) {
 		return FailedResultSet("MakeDir",path, "Not a valid path.");
 	}

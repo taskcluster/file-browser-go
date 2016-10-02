@@ -1,8 +1,10 @@
 package browser;
 
-import "os";
-
-var OutputFile *os.File = os.Stdout;
+import (
+	"os";
+	"encoding/json";
+	"io";
+)
 
 type Command struct {
 	Cmd string `json:"cmd"`
@@ -10,25 +12,17 @@ type Command struct {
 	Data []byte `json:"data"`
 }
 
-func ExitBrowser () interface{} {
-	WaitForOperationsToComplete();
-	return &ResultSet{
-		Cmd:"Exit",
-	}
-}
-
-func Run (cmd Command, out chan interface{} ) {
-	if cmd.Cmd == "Exit" {
-		out <- ExitBrowser();
-		return;
-	}
+func RunCmd (cmd Command, out *os.File) {
+	encoder := json.NewEncoder(out);
 	if len(cmd.Args) == 0 {
-		out <-  FailedResultSet(cmd.Cmd,"", "Not enough arguments.");
+		res := FailedResultSet(cmd.Cmd,"", "Not enough arguments.");
+		encoder.Encode(res);
 		return;
 	}
 	switch cmd.Cmd{
 	case "List":
-		out <-  List(cmd.Args[0]);
+		res := List(cmd.Args[0]);
+		encoder.Encode(res);
 		return;
 
 	case "GetFile":
@@ -36,30 +30,54 @@ func Run (cmd Command, out chan interface{} ) {
 		return;
 
 	case "PutFile":
-		out <-  PutFile(cmd.Args[0], cmd.Data);
+		res := PutFile(cmd.Args[0], cmd.Data);
+		encoder.Encode(res);
 		return;
 
 	case "Move":
 		if len(cmd.Args) < 1 {
-			out <-  FailedResultSet(cmd.Cmd,"","Not enough arguments.");
+			res := FailedResultSet(cmd.Cmd,"","Not enough arguments.");
+			encoder.Encode(res);
 			return;
 		}
-		out <-  Move(cmd.Args[0], cmd.Args[1]);
+		res := Move(cmd.Args[0], cmd.Args[1]);
+		encoder.Encode(res);
 		return;
 	case "Copy":
 		if len(cmd.Args) < 1 {
-			out <-  FailedResultSet(cmd.Cmd,"","Not enough arguments.");
+			res := FailedResultSet(cmd.Cmd,"","Not enough arguments.");
+			encoder.Encode(res);
 			return;
 		}
-		out <-  Copy(cmd.Args[0], cmd.Args[1]);
+		res := Copy(cmd.Args[0], cmd.Args[1], out);
+		encoder.Encode(res);
 		return;
 	case "Remove":
-		out <-  Remove(cmd.Args[0]);
+		res := Remove(cmd.Args[0]);
+		encoder.Encode(res);
 		return;
 	case "MakeDir":
-		out <-  MakeDirectory(cmd.Args[0]);
+		res := MakeDirectory(cmd.Args[0]);
+		encoder.Encode(res);
 		return;
 
 	}
-	out <-  FailedResultSet("","","No command specified.");
+	res := FailedResultSet("","","No command specified.");
+	encoder.Encode(res);
+}
+
+func Run(in *os.File, out *os.File) {
+	decoder := json.NewDecoder(in);
+	var cmd Command;
+	var err error = nil;
+	for {
+		err = decoder.Decode(&cmd);
+		if err != nil {
+			break;
+		}
+		RunCmd(cmd, out);
+	}
+	if err == io.EOF {
+		WaitForOperationsToComplete();
+	}
 }

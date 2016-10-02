@@ -9,45 +9,45 @@ import (
 
 // Locking paths to make sure there's no interference
 
-var IsLocked map[string]bool = make(map[string]bool);
+var isLocked map[string]bool = make(map[string]bool);
 
 func LockPath (path string) {
-	IsLocked[path] = true;
+	isLocked[path] = true;
 }
 
 func UnlockPath (path string) {
-	IsLocked[path] = false;
+	isLocked[path] = false;
+}
+
+func IsLocked (path string) bool{
+	if isLocked[path] {
+		return true;
+	}
+	dir, f := filepath.Split(path);
+	for f != "" {
+		if isLocked[dir] {
+			return true;
+		}
+		dir, f = filepath.Split(dir);
+	}
+	return false;
 }
 
 // On exit make browser wait until every copy operation
 // is complete
+var op sync.WaitGroup;
 
-var copy_running sync.WaitGroup;
-
-func CopyAdd () {
-	copy_running.Add(1);
+func OpAdd () {
+	op.Add(1);
 }
 
-func CopyDone () {
-	copy_running.Done();
-}
-
-// GetFile Lock
-
-var get_file_running sync.WaitGroup;
-
-func LockFile(){
-	get_file_running.Add(1);
-}
-
-func UnlockFile(){
-	get_file_running.Done();
+func OpDone () {
+	op.Done();
 }
 
 // Utility functions
 func WaitForOperationsToComplete() {
-	copy_running.Wait();
-	get_file_running.Wait();
+	op.Wait();
 }
 
 func IsDir (dir string) bool {

@@ -2,8 +2,7 @@ package browser;
 
 import (
 	"os";
-	// "fmt";
-	// "gopkg.in/vmihailenco/msgpack.v2";
+	"encoding/json";
 )
 
 // TODO: GetFile, PutFile, RunFile
@@ -38,20 +37,23 @@ func GetFileDiv (file *os.File) int64 {
 	return finfo.Size() / CHUNKSIZE + 1;
 }
 
-func GetFile (path string, out chan interface{}) {
-	LockFile();
-	defer UnlockFile();
+func GetFile (path string, out *os.File) {
+	OpAdd();
+	defer OpDone();
+	encoder := json.NewEncoder(out);
 	if !ValidateDirPath(&path) || IsDir(path) {
-		out <- FailedResultSet("GetFile", path, "Not a valid path.");
+		res := FailedResultSet("GetFile", path, "Not a valid path.");
+		encoder.Encode(res);
 		return;
 	}
 	file, err := os.Open(path);
 	if err != nil {
-		out <- FailedResultSet("GetFile",path, err.Error());
+		res := FailedResultSet("GetFile",path, err.Error());
+		encoder.Encode(res);
 		return;
 	}
 	maxdiv := GetFileDiv(file);
-	out <- &ResultSet{
+	res := &ResultSet{
 		Cmd: "GetFile",
 		Path: path,
 		Data: &FileData{
@@ -60,6 +62,7 @@ func GetFile (path string, out chan interface{}) {
 			Data: []byte{},
 		},
 	}
+	encoder.Encode(res);
 
 	buff := make([]byte, CHUNKSIZE);
 	var i int64;
@@ -75,9 +78,7 @@ func GetFile (path string, out chan interface{}) {
 				Data: buff,
 			},
 		}
-
-		out <- res;
-
+		encoder.Encode(res);
 	}
 }
 /*
@@ -95,6 +96,8 @@ Return resultset
 */
 
 func PutFile(path string, data []byte) interface{} {
+	OpAdd();
+	defer OpDone();
 	file, err := os.OpenFile(path, os.O_CREATE | os.O_APPEND | os.O_WRONLY, 0666);
 	if err != nil {
 		// fmt.Println(err.Error());
@@ -107,4 +110,3 @@ func PutFile(path string, data []byte) interface{} {
 		Path: path,
 	};
 }
-

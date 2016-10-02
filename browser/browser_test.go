@@ -92,9 +92,10 @@ func TestCopy (t *testing.T) {
 		_ = Remove(filepath.Join(home, "copy_to"));
 	}();
 
-	_ = Copy(d1, d2);
+	_ = Copy(d1, d2, os.Stdout);
 	WaitForOperationsToComplete();
 	if CompareDirectory(d1,d2) == false {
+		t.Logf("Directories not similar.");
 		t.Fail();
 	}
 }
@@ -105,18 +106,7 @@ func TestRun(t *testing.T) {
 		{ Cmd:"List", Args:[]string{"/var/"}, },
 		{ Cmd:"Exit", Args:[]string{}, },
 	}
-	out := make(chan interface{});
 	for _, cmd := range cmds {
-		Run(cmd, out);
-		ret := <-out;
-		if ret == nil {
-			break;
-		}
-		res := ret.(*ResultSet);
-		if res.Err != "" {
-			t.Logf(res.Err);
-			t.Fail();
-		}
-		t.Log(res);
+		RunCmd(cmd, os.Stdout);
 	}
 }

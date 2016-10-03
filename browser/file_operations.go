@@ -32,6 +32,9 @@ const CHUNKSIZE = 2048
 
 func GetFileDiv (file *os.File) int64 {
 	finfo, _ := file.Stat();
+	if finfo.Size() == 0 {
+		return 1;
+	}
 	if finfo.Size() % CHUNKSIZE == 0 {
 		return finfo.Size() / CHUNKSIZE;
 	}

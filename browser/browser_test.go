@@ -7,7 +7,6 @@ import (
 	"io";
 	"io/ioutil";
 	"math/rand";
-	"time";
 	"encoding/json";
 )
 
@@ -111,8 +110,8 @@ func TestGetFile (t *testing.T) {
 
 	data := []byte{};
 
-	gen := rand.New(rand.NewSource(time.Now().Unix()));
-	size := gen.Int31() % 1000 + 1; // Max size would be 4000 bytes
+	gen := rand.New(rand.NewSource(1));
+	size := 3000; // Max size would be 4000 bytes
 	for i := 0; i < int(size); i++ {
 		num := gen.Int31();
 
@@ -188,5 +187,58 @@ func TestGetFile (t *testing.T) {
 			t.Logf("Data not same");
 			t.FailNow();
 		}
+	}
+}
+
+func TestGetFileEmpty(t *testing.T) {
+	var tf, of *os.File;
+	var err error;
+	tf, err = ioutil.TempFile("","getfile");
+	FailNotNil(err, t);
+	of, err = ioutil.TempFile("", "catch");
+
+	_,_ = tf.Write([]byte{});
+	_ = tf.Close();
+
+	tp := tf.Name();
+	op := of.Name();
+	GetFile(tp, of);
+	WaitForOperationsToComplete();
+	of.Close();
+
+	of, err = os.OpenFile(op, os.O_RDONLY, 0777);
+	jsonDec := json.NewDecoder(of);
+
+	var max int64 = -1;
+	err = nil;
+	res := &ResultSet{};
+
+	tempBuff := []byte{};
+
+	for err != io.EOF {
+		err = jsonDec.Decode(res);
+		if err != nil {
+			t.Log(err);
+			break;
+		}
+		if res.Data.CurrentPiece == 0 {
+			t.Logf("Got total pieces %d", res.Data.TotalPieces);
+			max = res.Data.TotalPieces;
+			continue;
+		}
+		max--;
+		for _, b := range res.Data.Data {
+			tempBuff = append(tempBuff, b);
+		}
+	}
+
+	if max != 0 {
+		t.Log("All pieces not recieved.");
+		t.FailNow();
+	}
+	// t.Log(tempBuff);
+	if len(tempBuff) != CHUNKSIZE {
+		t.Logf("%d bytes expected.", CHUNKSIZE);
+		t.FailNow();
 	}
 }

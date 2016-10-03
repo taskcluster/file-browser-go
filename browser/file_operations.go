@@ -2,6 +2,7 @@ package browser;
 
 import (
 	"os";
+	"io";
 	"encoding/json";
 )
 
@@ -37,7 +38,7 @@ func GetFileDiv (file *os.File) int64 {
 	return finfo.Size() / CHUNKSIZE + 1;
 }
 
-func GetFile (path string, out *os.File) {
+func GetFile (path string, out io.Writer) {
 	OpAdd();
 	defer OpDone();
 	encoder := json.NewEncoder(out);

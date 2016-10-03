@@ -12,7 +12,7 @@ type Command struct {
 	Data []byte `json:"data"`
 }
 
-func RunCmd (cmd Command, out *os.File) {
+func RunCmd (cmd Command, out io.Writer) {
 	encoder := json.NewEncoder(out);
 	if len(cmd.Args) == 0 {
 		res := FailedResultSet(cmd.Cmd,"", "Not enough arguments.");

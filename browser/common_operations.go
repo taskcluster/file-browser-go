@@ -54,26 +54,31 @@ func Remove (path string) interface{} {
 
 // Function for copying file/dirs
 
-func Copy (oldpath, newpath string, out *os.File) interface{} {
+func Copy (oldpath, newpath string, out io.Writer) interface{} {
 	file, err := os.Open(oldpath);
 	if err != nil {
 		return FailedResultSet("Copy", oldpath, err.Error());
 	}
 	file.Close();
 
+	// Append the filename to the new path
+	_, f := filepath.Split(oldpath);
+	newpath = filepath.Join(newpath,f);
+
 	// Add to the wait group before the go routine
 	// to avoid a race condition
 	OpAdd();
 	// BFS Copying method
 	go func (oldpath, newpath string) {
+		// Release the lock after the goroutine completes
 		defer OpDone();
+
 		enc := json.NewEncoder(out);
 		queue := list.New();
 		lockedPaths := make([]string,0);
 		queue.PushBack(oldpath);
 		errStr := "";
 
-		// Release the lock after the goroutine completes
 		for queue.Len() > 0 {
 			path := queue.Front().Value.(string);
 			queue.Remove(queue.Front());
@@ -131,6 +136,7 @@ func Copy (oldpath, newpath string, out *os.File) interface{} {
 			Err: errStr,
 		}
 		enc.Encode(res);
+
 	}(oldpath, newpath);
 
 	return &ResultSet{

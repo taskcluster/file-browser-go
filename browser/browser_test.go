@@ -111,7 +111,7 @@ func TestGetFile (t *testing.T) {
 	data := []byte{};
 
 	gen := rand.New(rand.NewSource(1));
-	size := 3000; // Max size would be 4000 bytes
+	size := 3000;
 	for i := 0; i < int(size); i++ {
 		num := gen.Int31();
 
@@ -131,6 +131,11 @@ func TestGetFile (t *testing.T) {
 	// File paths
 	fp := tf.Name();
 	op := outputFile.Name();
+
+	defer func() {
+		_ = os.Remove(fp);
+		_ = os.Remove(op);
+	}();
 
 	// Write data to temp file and close
 	_, err = tf.Write(data);
@@ -204,6 +209,7 @@ func TestGetFileEmpty(t *testing.T) {
 	op := of.Name();
 	GetFile(tp, of);
 	WaitForOperationsToComplete();
+
 	of.Close();
 
 	of, err = os.OpenFile(op, os.O_RDONLY, 0777);
@@ -237,8 +243,72 @@ func TestGetFileEmpty(t *testing.T) {
 		t.FailNow();
 	}
 	// t.Log(tempBuff);
-	if len(tempBuff) != CHUNKSIZE {
-		t.Logf("%d bytes expected.", CHUNKSIZE);
+	if len(tempBuff) != 0 {
+		t.Logf("%d bytes expected.", 0);
 		t.FailNow();
+	}
+}
+
+func TestPutFile (t *testing.T) {
+	data := []byte{};
+
+	gen := rand.New(rand.NewSource(1));
+	t.Log("Generating bytes: ");
+	size := 3000;
+	for i := 0; i < int(size); i++ {
+		num := gen.Int31();
+
+		b := []byte{0,0,0,0};
+		var k int64 = 3;
+		for k >= 0 {
+			b[k] = byte(num & 0xff);
+			k--;
+			num = num >> 8;
+		}
+
+		for _, j := range b {
+			data = append(data, j);
+		}
+	}
+	t.Log("Bytes generated: ");
+
+	f, err := ioutil.TempFile("", "put_file_test");
+	FailNotNil(err, t);
+	newpath := f.Name();
+	os.Remove(newpath);
+	t.Log(newpath);
+
+	// Write data to newpath using PutFile2
+	var count int = 0;
+	for count < len(data) {
+		w := []byte{};
+		i := 0;
+		for i < CHUNKSIZE && count < len(data) {
+			w = append(w, data[count]);
+			i++;
+			count++;
+		}
+		t.Log("Chunk Length: ", len(w));
+		res := PutFile2(newpath, w).(*ResultSet);
+		if res.Err != "" {
+			t.FailNow();
+
+			_ = PutFile(newpath, []byte{});
+		}
+	}
+	_ = PutFile2(newpath, []byte{});
+	file, err := os.OpenFile(newpath, os.O_RDONLY, 0777);
+	defer os.Remove(newpath);
+	FailNotNil(err, t);
+	defer file.Close();
+	dataCopy, err := ioutil.ReadAll(file);
+	FailNotNil(err ,t);
+	// t.Log(dataCopy);
+	t.Log(len(dataCopy) , len(data));
+
+	for i, _ := range data {
+		if data[i] != dataCopy[i] {
+			t.FailNow();
+		}
 	}
 }

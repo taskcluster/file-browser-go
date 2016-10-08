@@ -3,6 +3,7 @@ package browser;
 import (
 	"os";
 	"io";
+	"io/ioutil";
 	"encoding/json";
 )
 
@@ -27,7 +28,7 @@ const CHUNKSIZE = 2048
 	}
 
 	The file is then read in chunks of size CHUNKSIZE and
-	written to stdout in msgpack format.
+	written to stdout in json format.
 */
 
 func GetFileDiv (file *os.File) int64 {
@@ -72,14 +73,14 @@ func GetFile (path string, out io.Writer) {
 	var i int64;
 	defer file.Close();
 	for i=1; i <= maxdiv; i++ {
-		_, _ = file.Read(buff);
+		n, _ := file.Read(buff);
 		res := &ResultSet{
 			Cmd: "GetFile",
 			Path: path,
 			Data: &FileData{
 				TotalPieces: maxdiv,
 				CurrentPiece: i,
-				Data: buff,
+				Data: buff[:n],
 			},
 		}
 		encoder.Encode(res);
@@ -99,6 +100,7 @@ else append bytes to end of file.
 Return resultset
 */
 
+
 func PutFile(path string, data []byte) interface{} {
 	OpAdd();
 	defer OpDone();
@@ -114,3 +116,68 @@ func PutFile(path string, data []byte) interface{} {
 		Path: path,
 	};
 }
+
+/*
+putFile2
+Use instead of PutFile
+params: 
+	path : string, path where the file is to be written
+	data : []byte, data to be written to the file
+
+*/
+
+var tempPath map[string]string = make(map[string]string);
+
+func WriteToTemp(path string, data []byte) bool {
+	file, err := os.OpenFile(path, os.O_APPEND | os.O_WRONLY, 0666);
+	if err != nil {
+		return false;
+	}
+	_, err = file.Write(data);
+	if err != nil {
+		return false;
+	}
+	file.Close();
+	return true;
+}
+
+func PutFile2 (path string, data []byte) interface{} {
+	OpAdd();
+	defer OpDone();
+	if tempPath[path] == "" {
+		tf, err := ioutil.TempFile("", "putfile");
+		if err != nil {
+			return FailedResultSet("PutFile", path, err.Error());
+		}
+		tempPath[path] = tf.Name();
+		tf.Close();
+		if WriteToTemp(tempPath[path], data) == false {
+			return FailedResultSet("PutFile", path, "Unable to write to temp file.");
+		}
+		LockPath(tempPath[path]);
+		return &ResultSet{
+			Cmd: "PutFile",
+			Path: path,
+		}
+	}
+
+	if len(data) == 0 {
+		err := os.Rename(tempPath[path], path);
+		tempPath[path] = "";
+		UnlockPath(tempPath[path]);
+		if err != nil {
+			return FailedResultSet("PutFile", path, "Unable to move file to desired location.");
+		}
+		return &ResultSet{
+			Cmd: "PutFile",
+			Path: path,
+		}
+	}
+
+	WriteToTemp(tempPath[path], data);
+
+	return &ResultSet{
+		Cmd: "PutFile",
+		Path: path,
+	};
+};

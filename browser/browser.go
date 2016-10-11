@@ -30,7 +30,7 @@ func RunCmd (cmd Command, out io.Writer) {
 		return;
 
 	case "PutFile":
-		res := PutFile(cmd.Args[0], cmd.Data);
+		res := PutFile2(cmd.Args[0], cmd.Data);
 		encoder.Encode(res);
 		return;
 

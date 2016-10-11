@@ -312,3 +312,17 @@ func TestPutFile (t *testing.T) {
 		}
 	}
 }
+
+func TestPutFileEmpty(t *testing.T) {
+	newpath := filepath.Join(os.TempDir(), "put_file_empty_test");
+	PutFile2(newpath, []byte{});
+	PutFile2(newpath, []byte{});
+	file, err := os.Open(newpath);
+	FailNotNil(err, t);
+	defer file.Close();
+	data, err := ioutil.ReadAll(file);
+	FailNotNil(err, t);
+	if len(data) != 0 {
+		t.FailNow();
+	}
+}

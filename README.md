@@ -34,7 +34,7 @@ Currently supports:
 ### GetFile
 GetFile initially writes a ResultSet object
 with total number of pieces and piece number 0.
-```json
+```
 {
 	Cmd: "GetFile",
 	Path: < path given in command >,
@@ -46,7 +46,7 @@ with total number of pieces and piece number 0.
 }
 ```
 Use TotalPieces and CurrentPiece to reassemble the file.
-```json
+```
 {
 	Cmd: "GetFile",
 	Path: < path given in command >,
@@ -61,7 +61,7 @@ Use TotalPieces and CurrentPiece to reassemble the file.
 ### PutFile
 
 Send the file data to the binary in chunks of 2048 bytes.
-```json
+```
 {
 	Cmd: "PutFile",
 	Args: [ <path of file> ],
@@ -71,7 +71,7 @@ Send the file data to the binary in chunks of 2048 bytes.
 PutFile will append the bytes to a temp file.
 After all file data has been sent, send a command of the form
 
-```json
+```
 {
 	Cmd: "PutFile",
 	Args: [ <path of file> ],

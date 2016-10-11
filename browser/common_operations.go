@@ -61,6 +61,11 @@ func Copy (oldpath, newpath string, out io.Writer) interface{} {
 	}
 	file.Close();
 
+	finfo, err := os.Stat(newpath);
+	if err != nil || !finfo.IsDir() {
+		return FailedResultSet("Copy", newpath, "Destination not valid.");
+	}
+
 	// Append the filename to the new path
 	_, f := filepath.Split(oldpath);
 	newpath = filepath.Join(newpath,f);

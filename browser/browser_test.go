@@ -28,6 +28,15 @@ func TestList(t *testing.T) {
 	}
 }
 
+func TestListNotExist(t *testing.T) {
+	res := List("does/not/exist").(*ResultSet);
+	if res.Err == "" {
+		t.Log("Error should occur.");
+		t.Fail();
+	}
+	t.Log("Error: ", res.Err);
+}
+
 func TestMakeDirectoryAndRemove(t *testing.T) {
 	home , err:= ioutil.TempDir("","MakeAndRemove");
 	FailNotNil(err, t);
@@ -52,6 +61,15 @@ func TestMakeDirectoryAndRemove(t *testing.T) {
 			t.Fail();
 		}
 	}
+}
+
+func TestMakeDirectoryBadPath(t *testing.T) {
+	res := MakeDirectory("does/not/exist").(*ResultSet);
+	if res.Err == "" {
+		t.Log("Error should occur.");
+		t.FailNow();
+	}
+	t.Log("Error: ", res.Err);
 }
 
 func TestCopy (t *testing.T) {
@@ -87,6 +105,27 @@ func TestCopy (t *testing.T) {
 		t.Logf("Directories not similar.");
 		t.Fail();
 	}
+}
+
+func TestCopySrcNotExist (t *testing.T){
+	res := Copy("does/not/exist", os.TempDir(), ioutil.Discard).(*ResultSet);
+	if res.Err == "" {
+		t.Log("Error should occur.");
+		t.FailNow();
+	}
+	t.Log("Error: ", res.Err);
+}
+
+func TestCopyDestNotExist(t *testing.T) {
+	f, err := ioutil.TempFile("", "existent_source");
+	FailNotNil(err, t);
+	f.Close();
+	res := Copy(f.Name(), "does/not/exist", ioutil.Discard).(*ResultSet);
+	if res.Err == "" {
+		t.Log("Error should occur.");
+		t.FailNow();
+	}
+	t.Log("Error: ", res.Err);
 }
 
 func TestGetFile (t *testing.T) {
@@ -249,6 +288,29 @@ func TestGetFileEmpty(t *testing.T) {
 	}
 }
 
+func TestGetFileNotExist(t *testing.T) {
+	path := "/this/is/not/a/valid/path";
+	op, err := ioutil.TempFile("", "get_file_not_exist_op");
+	FailNotNil(err, t);
+
+	GetFile(path, op);
+	WaitForOperationsToComplete();
+	op.Close();
+
+	op, err = os.Open(op.Name());
+	FailNotNil(err, t);
+
+	dec := json.NewDecoder(op);
+	var res *ResultSet = nil;
+	dec.Decode(&res);
+	if res.Err == "" {
+		t.Log("Should return error.");
+		t.FailNow();
+	}
+
+	t.Log("Error: ", res.Err);
+}
+
 func TestPutFile (t *testing.T) {
 	data := []byte{};
 
@@ -325,4 +387,14 @@ func TestPutFileEmpty(t *testing.T) {
 	if len(data) != 0 {
 		t.FailNow();
 	}
+}
+
+func TestPutFileNotExists(t *testing.T) {
+	path := "this/path/does/not/exist";
+	res := PutFile2(path, []byte{}).(*ResultSet);
+	if res.Err == "" {
+		t.Log("Error should occur");
+		t.FailNow();
+	}
+	t.Log("Error: ", res.Err);
 }

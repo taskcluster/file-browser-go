@@ -5,6 +5,7 @@ import (
 	"io";
 	"io/ioutil";
 	"encoding/json";
+	"path/filepath";
 )
 
 // TODO: GetFile, PutFile, RunFile
@@ -145,6 +146,10 @@ func PutFile2 (path string, data []byte) interface{} {
 	OpAdd();
 	defer OpDone();
 	if tempPath[path] == "" {
+		finfo, err := os.Stat(filepath.Dir(path));
+		if err != nil || !finfo.IsDir() {
+			return FailedResultSet("PutFile", path, "Path not valid.");
+		}
 		tf, err := ioutil.TempFile("", "putfile");
 		if err != nil {
 			return FailedResultSet("PutFile", path, err.Error());

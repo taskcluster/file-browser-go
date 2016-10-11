@@ -1,6 +1,6 @@
 ## File Browser Go
 
-This is the server side component of the file browser. Itreads JSON input from stdin and writes msgpack output to stdout.
+This is the server side component of the file browser. It reads JSON input from stdin and writes msgpack output to stdout.
 
 Input format:
 ```

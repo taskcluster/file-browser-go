@@ -2,7 +2,7 @@ package browser;
 
 type FileData struct {
 	TotalPieces int64 `json:"totalPieces"`
-	CurrentPiece int64 `json:"currentPieces"`
+	CurrentPiece int64 `json:"currentPiece"`
 	Data []byte `json:"data"`
 }
 

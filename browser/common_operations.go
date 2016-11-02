@@ -11,7 +11,7 @@ import (
 func Move (oldpath, newpath string) interface{} {
 	OpAdd();
 	if IsLocked(oldpath) {
-		return FailedResultSet("Move", oldpath, "Path locked for another operation.");
+		return FailedResultSet("mv", oldpath, "Path locked for another operation.");
 	}
 	LockPath(oldpath);
 	LockPath(newpath);
@@ -24,10 +24,10 @@ func Move (oldpath, newpath string) interface{} {
 
 	err := os.Rename(oldpath, newpath);
 	if err != nil {
-		return FailedResultSet("Move", oldpath, err.Error());
+		return FailedResultSet("mv", oldpath, err.Error());
 	}
 	return &ResultSet{
-		Cmd: "Move",
+		Cmd: "mv",
 		Path: newpath,
 	}
 }
@@ -35,7 +35,7 @@ func Move (oldpath, newpath string) interface{} {
 func Remove (path string) interface{} {
 	OpAdd();
 	if IsLocked(path) {
-		return FailedResultSet("Move", path, "Path locked for another operation.");
+		return FailedResultSet("mv", path, "Path locked for another operation.");
 	}
 	LockPath(path);
 	defer func() {
@@ -44,10 +44,10 @@ func Remove (path string) interface{} {
 	}();
 	err := os.RemoveAll(path);
 	if err != nil {
-		return FailedResultSet("Remove", path, err.Error());
+		return FailedResultSet("rm", path, err.Error());
 	}
 	return &ResultSet{
-		Cmd: "Remove",
+		Cmd: "rm",
 		Path: path,
 	};
 }
@@ -57,13 +57,13 @@ func Remove (path string) interface{} {
 func Copy (oldpath, newpath string, out io.Writer) interface{} {
 	file, err := os.Open(oldpath);
 	if err != nil {
-		return FailedResultSet("Copy", oldpath, err.Error());
+		return FailedResultSet("cp", oldpath, err.Error());
 	}
 	file.Close();
 
 	finfo, err := os.Stat(newpath);
 	if err != nil || !finfo.IsDir() {
-		return FailedResultSet("Copy", newpath, "Destination not valid.");
+		return FailedResultSet("cp", newpath, "Destination not valid.");
 	}
 
 	// Append the filename to the new path
@@ -136,7 +136,7 @@ func Copy (oldpath, newpath string, out io.Writer) interface{} {
 		}
 
 		res := &ResultSet{
-			Cmd: "Copy Complete",
+			Cmd: "cp",
 			Path: newpath,
 			Err: errStr,
 		}
@@ -144,8 +144,6 @@ func Copy (oldpath, newpath string, out io.Writer) interface{} {
 
 	}(oldpath, newpath);
 
-	return &ResultSet{
-		Cmd: "Copy Started",
-		Path: newpath,
-	}
+	return nil;
+
 }

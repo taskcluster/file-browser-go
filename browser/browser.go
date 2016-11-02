@@ -20,21 +20,22 @@ func RunCmd (cmd Command, out io.Writer) {
 		return;
 	}
 	switch cmd.Cmd{
-	case "List":
+
+	case "ls":
 		res := List(cmd.Args[0]);
 		encoder.Encode(res);
 		return;
 
-	case "GetFile":
+	case "getfile":
 		GetFile(cmd.Args[0], out);
 		return;
 
-	case "PutFile":
+	case "putfile":
 		res := PutFile2(cmd.Args[0], cmd.Data);
 		encoder.Encode(res);
 		return;
 
-	case "Move":
+	case "mv":
 		if len(cmd.Args) < 1 {
 			res := FailedResultSet(cmd.Cmd,"","Not enough arguments.");
 			encoder.Encode(res);
@@ -43,20 +44,23 @@ func RunCmd (cmd Command, out io.Writer) {
 		res := Move(cmd.Args[0], cmd.Args[1]);
 		encoder.Encode(res);
 		return;
-	case "Copy":
+	case "cp":
 		if len(cmd.Args) < 1 {
 			res := FailedResultSet(cmd.Cmd,"","Not enough arguments.");
 			encoder.Encode(res);
 			return;
 		}
 		res := Copy(cmd.Args[0], cmd.Args[1], out);
-		encoder.Encode(res);
+		if res != nil {
+			encoder.Encode(res);
+		}
 		return;
-	case "Remove":
+	case "rm":
 		res := Remove(cmd.Args[0]);
 		encoder.Encode(res);
 		return;
-	case "MakeDir":
+
+	case "mkdir":
 		res := MakeDirectory(cmd.Args[0]);
 		encoder.Encode(res);
 		return;

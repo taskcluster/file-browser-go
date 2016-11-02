@@ -9,11 +9,11 @@ func List(path string) interface{} {
 	OpAdd();
 	defer OpDone();
 	if !ValidateDirPath(&path)|| !IsDir(path) {
-		return FailedResultSet("List",path, "Not a directory.");
+		return FailedResultSet("list",path, "Not a directory.");
 	}
 	finfo, err := ioutil.ReadDir(path);
 	if err != nil {
-		return FailedResultSet("List",path, err.Error());
+		return FailedResultSet("list",path, err.Error());
 	}
 	files := []FileInfo{};
 	for _, f := range finfo {
@@ -24,7 +24,7 @@ func List(path string) interface{} {
 		});
 	}
 	return &ResultSet{
-		Cmd: "List",
+		Cmd: "list",
 		Path: path,
 		Files: files,
 	}
@@ -34,14 +34,14 @@ func MakeDirectory (path string) interface{} {
 	OpAdd();
 	defer OpDone();
 	if !ValidateDirPath(&path) {
-		return FailedResultSet("MakeDir",path, "Not a valid path.");
+		return FailedResultSet("mkdir",path, "Not a valid path.");
 	}
 	err := os.Mkdir(path, 0777);
 	if err != nil {
-		return FailedResultSet("MakeDir",path, err.Error());
+		return FailedResultSet("mkdir",path, err.Error());
 	}
 	return &ResultSet{
-		Cmd: "MakeDir",
+		Cmd: "mkdir",
 		Path: path,
 	}
 }

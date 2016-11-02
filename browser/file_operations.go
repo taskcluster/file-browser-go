@@ -48,19 +48,19 @@ func GetFile (path string, out io.Writer) {
 	defer OpDone();
 	encoder := json.NewEncoder(out);
 	if !ValidateDirPath(&path) || IsDir(path) {
-		res := FailedResultSet("GetFile", path, "Not a valid path.");
+		res := FailedResultSet("getfile", path, "Not a valid path.");
 		encoder.Encode(res);
 		return;
 	}
 	file, err := os.Open(path);
 	if err != nil {
-		res := FailedResultSet("GetFile",path, err.Error());
+		res := FailedResultSet("getfile",path, err.Error());
 		encoder.Encode(res);
 		return;
 	}
 	maxdiv := GetFileDiv(file);
 	res := &ResultSet{
-		Cmd: "GetFile",
+		Cmd: "getfile",
 		Path: path,
 		Data: &FileData{
 			TotalPieces: maxdiv,
@@ -76,7 +76,7 @@ func GetFile (path string, out io.Writer) {
 	for i=1; i <= maxdiv; i++ {
 		n, _ := file.Read(buff);
 		res := &ResultSet{
-			Cmd: "GetFile",
+			Cmd: "getfile",
 			Path: path,
 			Data: &FileData{
 				TotalPieces: maxdiv,
@@ -91,7 +91,7 @@ func GetFile (path string, out io.Writer) {
 PutFile:
 Receive command of the form
 {
-	"Cmd": "PutFile",
+	"Cmd": "putfile",
 	"Args": [<path>],
 	"Data": <bytes>,
 }
@@ -108,12 +108,12 @@ func PutFile(path string, data []byte) interface{} {
 	file, err := os.OpenFile(path, os.O_CREATE | os.O_APPEND | os.O_WRONLY, 0666);
 	if err != nil {
 		// fmt.Println(err.Error());
-		return FailedResultSet("PutFile",path, err.Error());
+		return FailedResultSet("putfile",path, err.Error());
 	}
 	defer file.Close();
 	_,_ = file.Write(data);
 	return &ResultSet{
-		Cmd: "PutFile",
+		Cmd: "putfile",
 		Path: path,
 	};
 }
@@ -148,20 +148,20 @@ func PutFile2 (path string, data []byte) interface{} {
 	if tempPath[path] == "" {
 		finfo, err := os.Stat(filepath.Dir(path));
 		if err != nil || !finfo.IsDir() {
-			return FailedResultSet("PutFile", path, "Path not valid.");
+			return FailedResultSet("putfile", path, "Path not valid.");
 		}
 		tf, err := ioutil.TempFile("", "putfile");
 		if err != nil {
-			return FailedResultSet("PutFile", path, err.Error());
+			return FailedResultSet("putfile", path, err.Error());
 		}
 		tempPath[path] = tf.Name();
 		tf.Close();
 		if WriteToTemp(tempPath[path], data) == false {
-			return FailedResultSet("PutFile", path, "Unable to write to temp file.");
+			return FailedResultSet("putfile", path, "Unable to write to temp file.");
 		}
 		LockPath(tempPath[path]);
 		return &ResultSet{
-			Cmd: "PutFile",
+			Cmd: "putfile",
 			Path: path,
 		}
 	}
@@ -171,10 +171,10 @@ func PutFile2 (path string, data []byte) interface{} {
 		tempPath[path] = "";
 		UnlockPath(tempPath[path]);
 		if err != nil {
-			return FailedResultSet("PutFile", path, "Unable to move file to desired location.");
+			return FailedResultSet("putfile", path, "Unable to move file to desired location.");
 		}
 		return &ResultSet{
-			Cmd: "PutFile",
+			Cmd: "putfile",
 			Path: path,
 		}
 	}
@@ -182,7 +182,7 @@ func PutFile2 (path string, data []byte) interface{} {
 	WriteToTemp(tempPath[path], data);
 
 	return &ResultSet{
-		Cmd: "PutFile",
+		Cmd: "putfile",
 		Path: path,
 	};
 };

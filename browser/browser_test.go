@@ -98,10 +98,10 @@ func TestCopy (t *testing.T) {
 		_ = Remove(d2);
 	}();
 
-	res := Copy(d1, d2, ioutil.Discard).(*ResultSet);
+	_ = Copy(d1, d2, ioutil.Discard);
 	WaitForOperationsToComplete();
 
-	if CompareDirectory(d1,res.Path) == false {
+	if CompareDirectory(d1, filepath.Join(d2, "copy_folder")) == false {
 		t.Logf("Directories not similar.");
 		t.Fail();
 	}

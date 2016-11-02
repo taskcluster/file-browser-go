@@ -27,4 +27,5 @@ _testmain.go
 *.out
 
 test_input.txt
-
+node_modules
+lib

@@ -1,10 +1,10 @@
-package main;
+package main
 
 import (
-	"os";
-	"github.com/taskcluster/file-browser-go/browser";
+	"github.com/taskcluster/file-browser-go/browser"
+	"os"
 )
 
-func main(){
-	browser.Run(os.Stdin, os.Stdout);
+func main() {
+	browser.Run(os.Stdin, os.Stdout)
 }

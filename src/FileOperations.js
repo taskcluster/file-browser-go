@@ -1,7 +1,7 @@
 'use strict';
 
 let fs      = require('fs');
-let Buffer  = require('Buffer');
+let Buffer  = require('buffer');
 let Command = require('./Command.js');
 
 // Maps path on the container to path in the local fs.

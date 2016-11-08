@@ -4,8 +4,9 @@
   "description": "This contains a go executable and a node API for the file browser project",
   "main": "index.js",
   "scripts": {
-    "test": "echo \"Error: no test specified\" && exit 1",
-    "compile": "babel-compile -p taskcluster src:lib"
+    "test": "mocha .test",
+    "compile": "babel-compile -p taskcluster src:lib test:.test",
+    "pretest": "go build && npm run compile"
   },
   "repository": {
     "type": "git",
@@ -20,6 +21,7 @@
     "babel-compile": "^2.0.0",
     "babel-preset-taskcluster": "^3.0.0",
     "debug": "^2.2.0",
+    "docker": "^1.0.0",
     "slugid": "^1.1.0",
     "through2": "^2.0.1",
     "ws-shell": "^0.1.5"

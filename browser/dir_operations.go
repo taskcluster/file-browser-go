@@ -9,11 +9,11 @@ func List(path string) interface{} {
 	OpAdd();
 	defer OpDone();
 	if !ValidateDirPath(&path)|| !IsDir(path) {
-		return FailedResultSet("list",path, "Not a directory.");
+		return FailedResultSet("ls",path, "Not a directory.");
 	}
 	finfo, err := ioutil.ReadDir(path);
 	if err != nil {
-		return FailedResultSet("list",path, err.Error());
+		return FailedResultSet("ls",path, err.Error());
 	}
 	files := []FileInfo{};
 	for _, f := range finfo {
@@ -24,7 +24,7 @@ func List(path string) interface{} {
 		});
 	}
 	return &ResultSet{
-		Cmd: "list",
+		Cmd: "ls",
 		Path: path,
 		Files: files,
 	}

@@ -16,8 +16,7 @@ describe ('Basic', function(){
     let fb = new FileBrowser(shell);
     let contents = await fb.ls('/'); 
     console.log(contents);
-    fb.kill();
-    return;
+    await fb.kill();
   });
 
 });

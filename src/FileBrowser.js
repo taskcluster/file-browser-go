@@ -13,6 +13,9 @@ class FileBrowser {
   
   constructor(shell) {
     assert(shell);
+    assert(shell.stdin);
+    assert(shell.stdout);
+
     this.shell = shell;   
 
     this.stdin = through2({
@@ -35,7 +38,7 @@ class FileBrowser {
 // Sync commands
   
   identifyAndResolve (command, path) {
-    let prom = new Promise(resolve => {
+    return new Promise(resolve => {
       return this.stdout.on('data', resultSet => {
         let cmd = resultSet.cmd;
         let resPath = resultSet.path;
@@ -45,7 +48,6 @@ class FileBrowser {
         }
       });
     });
-    return prom;
   }
 
   async ls(path) {
@@ -76,11 +78,14 @@ class FileBrowser {
     return this.identifyAndResolve("cp", newpath);
   }
 
-  kill () {
-    this.shell.kill();
+  async kill () {
+    let prom = new Promise((resolve, reject) => {
+      this.shell.on('exit', resolve).on('close', resolve).on('error', reject);
+    });
     this.stdin.destroy();
     this.stdout.destroy();
-    return 0;
+    this.shell.kill();
+    return prom;
   }
 
   // getfile and putfile

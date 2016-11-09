@@ -30,3 +30,5 @@ test_input.txt
 node_modules
 lib
 .test
+
+file-browser-go

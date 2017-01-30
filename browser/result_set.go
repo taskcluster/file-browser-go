@@ -13,6 +13,7 @@ type FileInfo struct {
 }
 
 type ResultSet struct {
+	Id string `json:"id"`
 	Cmd string `json:"cmd"`
 	Path string `json:"path"`
 	Err string `json:"error"`
@@ -20,8 +21,9 @@ type ResultSet struct {
 	Data *FileData `json:"fileData"`
 }
 
-func FailedResultSet (cmd, path string, err string) *ResultSet {
+func FailedResultSet (cmd, path, id, err string) *ResultSet {
 	return &ResultSet{
+		Id: id,
 		Cmd: cmd,
 		Path: path,
 		Err: err,

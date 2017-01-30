@@ -8,10 +8,10 @@ import (
 	"container/list";
 )
 
-func Move (oldpath, newpath string) interface{} {
+func Move (id, oldpath, newpath string) interface{} {
 	OpAdd();
 	if IsLocked(oldpath) {
-		return FailedResultSet("mv", oldpath, "Path locked for another operation.");
+		return FailedResultSet(id, "mv", oldpath, "Path locked for another operation.");
 	}
 	LockPath(oldpath);
 	LockPath(newpath);
@@ -24,18 +24,19 @@ func Move (oldpath, newpath string) interface{} {
 
 	err := os.Rename(oldpath, newpath);
 	if err != nil {
-		return FailedResultSet("mv", oldpath, err.Error());
+		return FailedResultSet(id, "mv", oldpath, err.Error());
 	}
 	return &ResultSet{
+		Id : id,
 		Cmd: "mv",
 		Path: newpath,
 	}
 }
 
-func Remove (path string) interface{} {
+func Remove (id, path string) interface{} {
 	OpAdd();
 	if IsLocked(path) {
-		return FailedResultSet("mv", path, "Path locked for another operation.");
+		return FailedResultSet(id, "mv", path, "Path locked for another operation.");
 	}
 	LockPath(path);
 	defer func() {
@@ -44,9 +45,10 @@ func Remove (path string) interface{} {
 	}();
 	err := os.RemoveAll(path);
 	if err != nil {
-		return FailedResultSet("rm", path, err.Error());
+		return FailedResultSet(id, "rm", path, err.Error());
 	}
 	return &ResultSet{
+		Id : id,
 		Cmd: "rm",
 		Path: path,
 	};
@@ -54,16 +56,16 @@ func Remove (path string) interface{} {
 
 // Function for copying file/dirs
 
-func Copy (oldpath, newpath string, out io.Writer) interface{} {
+func Copy (id, oldpath, newpath string, out io.Writer) interface{} {
 	file, err := os.Open(oldpath);
 	if err != nil {
-		return FailedResultSet("cp", oldpath, err.Error());
+		return FailedResultSet(id, "cp", oldpath, err.Error());
 	}
 	file.Close();
 
 	finfo, err := os.Stat(newpath);
 	if err != nil || !finfo.IsDir() {
-		return FailedResultSet("cp", newpath, "Destination not valid.");
+		return FailedResultSet(id, "cp", newpath, "Destination not valid.");
 	}
 
 	// Append the filename to the new path
@@ -74,7 +76,7 @@ func Copy (oldpath, newpath string, out io.Writer) interface{} {
 	// to avoid a race condition
 	OpAdd();
 	// BFS Copying method
-	go func (oldpath, newpath string) {
+	go func (id, oldpath, newpath string) {
 		// Release the lock after the goroutine completes
 		defer OpDone();
 
@@ -136,13 +138,14 @@ func Copy (oldpath, newpath string, out io.Writer) interface{} {
 		}
 
 		res := &ResultSet{
+			Id : id,
 			Cmd: "cp",
 			Path: newpath,
 			Err: errStr,
 		}
 		enc.Encode(res);
 
-	}(oldpath, newpath);
+	}(id, oldpath, newpath);
 
 	return nil;
 

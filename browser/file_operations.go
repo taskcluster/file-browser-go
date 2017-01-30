@@ -43,18 +43,18 @@ func GetFileDiv (file *os.File) int64 {
 	return finfo.Size() / CHUNKSIZE + 1;
 }
 
-func GetFile (path string, out io.Writer) {
+func GetFile (id, path string, out io.Writer) {
 	OpAdd();
 	defer OpDone();
 	encoder := json.NewEncoder(out);
 	if !ValidateDirPath(&path) || IsDir(path) {
-		res := FailedResultSet("getfile", path, "Not a valid path.");
+		res := FailedResultSet(id, "getfile", path, "Not a valid path.");
 		encoder.Encode(res);
 		return;
 	}
 	file, err := os.Open(path);
 	if err != nil {
-		res := FailedResultSet("getfile",path, err.Error());
+		res := FailedResultSet(id, "getfile",path, err.Error());
 		encoder.Encode(res);
 		return;
 	}
@@ -102,17 +102,18 @@ Return resultset
 */
 
 
-func PutFile(path string, data []byte) interface{} {
+func PutFile(id, path string, data []byte) interface{} {
 	OpAdd();
 	defer OpDone();
 	file, err := os.OpenFile(path, os.O_CREATE | os.O_APPEND | os.O_WRONLY, 0666);
 	if err != nil {
 		// fmt.Println(err.Error());
-		return FailedResultSet("putfile",path, err.Error());
+		return FailedResultSet(id, "putfile",path, err.Error());
 	}
 	defer file.Close();
 	_,_ = file.Write(data);
 	return &ResultSet{
+		Id : id,
 		Cmd: "putfile",
 		Path: path,
 	};
@@ -142,25 +143,26 @@ func WriteToTemp(path string, data []byte) bool {
 	return true;
 }
 
-func PutFile2 (path string, data []byte) interface{} {
+func PutFile2 (id, path string, data []byte) interface{} {
 	OpAdd();
 	defer OpDone();
 	if tempPath[path] == "" {
 		finfo, err := os.Stat(filepath.Dir(path));
 		if err != nil || !finfo.IsDir() {
-			return FailedResultSet("putfile", path, "Path not valid.");
+			return FailedResultSet(id, "putfile", path, "Path not valid.");
 		}
 		tf, err := ioutil.TempFile("", "putfile");
 		if err != nil {
-			return FailedResultSet("putfile", path, err.Error());
+			return FailedResultSet(id, "putfile", path, err.Error());
 		}
 		tempPath[path] = tf.Name();
 		tf.Close();
 		if WriteToTemp(tempPath[path], data) == false {
-			return FailedResultSet("putfile", path, "Unable to write to temp file.");
+			return FailedResultSet(id, "putfile", path, "Unable to write to temp file.");
 		}
 		LockPath(tempPath[path]);
 		return &ResultSet{
+			Id : id,
 			Cmd: "putfile",
 			Path: path,
 		}
@@ -171,9 +173,10 @@ func PutFile2 (path string, data []byte) interface{} {
 		tempPath[path] = "";
 		UnlockPath(tempPath[path]);
 		if err != nil {
-			return FailedResultSet("putfile", path, "Unable to move file to desired location.");
+			return FailedResultSet(id, "putfile", path, "Unable to move file to desired location.");
 		}
 		return &ResultSet{
+			Id: id,
 			Cmd: "putfile",
 			Path: path,
 		}
@@ -182,6 +185,7 @@ func PutFile2 (path string, data []byte) interface{} {
 	WriteToTemp(tempPath[path], data);
 
 	return &ResultSet{
+		Id : id,
 		Cmd: "putfile",
 		Path: path,
 	};

@@ -1,7 +1,7 @@
 package main
 
 import (
-	"github.com/taskcluster/file-browser-go/browser"
+	"./browser"
 	"os"
 )
 

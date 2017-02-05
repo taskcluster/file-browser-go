@@ -1,14 +1,16 @@
 'use strict';
 /* API for all file-browser commands */
 
-let through2	= require('through2');
-let assert 		= require('assert');
-let fs        = require('fs');
+const
+  through2  = require('through2'),
+  assert     = require('assert'),
+  fs        = require('fs');
 
-let Command 				= require('./Command.js');
-let FileOperations 	= require('./FileOperations.js');
-let Registry 				= require('./Registry.js');
-let StringDecoder 	= require('string_decoder').StringDecoder;
+const
+  Command         = require('./Command.js'),
+  FileOperations   = require('./FileOperations.js'),
+  Registry         = require('./Registry.js'),
+  StringDecoder   = require('string_decoder').StringDecoder;
 
 const decoder = new StringDecoder();
 
@@ -34,21 +36,25 @@ class FileBrowser {
     let self = this;
 
     ["mv", "cp"].forEach(c => {
-      self[c] = async (src, dest) => {
+
+      self[c] = (src, dest) => {
         let cmd = Command[c](src, dest);
         self.registry.registerCommand(cmd.id);
         self.stdin.write(cmd);
         return self.identifyAndResolve(cmd.cmd, cmd.id);
       }
+
     });
 
     ["ls", "rm", "mkdir"].forEach(c => {
-      self[c] = async (path) => {
+
+      self[c] = (path) => {
         let cmd = Command[c](path);
         self.registry.registerCommand(cmd.id);
         self.stdin.write(cmd);
         return self.identifyAndResolve(cmd.cmd, cmd.id);
       }
+
     });
   }
 
@@ -74,29 +80,29 @@ class FileBrowser {
   }
 
   async rm (path) {
-		let cmd = Command.rm(path);
-		this.registry.registerCommand(cmd.id);
+    let cmd = Command.rm(path);
+    this.registry.registerCommand(cmd.id);
     this.stdin.write(cmd);
     return this.identifyAndResolve("rm", cmd.id);
   }
 
   async mv (src, dest) {
-		let command = Command.mv(src, dest);
-		this.registry.registerCommand(command.id);
+    let command = Command.mv(src, dest);
+    this.registry.registerCommand(command.id);
     this.stdin.write(command);
     return this.identifyAndResolve("mv", command.id);
   }
 
   async mkdir (path) {
-		let command = Command.mkdir(path);
-		this.registry.registerCommand(command.id);
+    let command = Command.mkdir(path);
+    this.registry.registerCommand(command.id);
     this.stdin.write(command);
     return this.identifyAndResolve("mkdir", path);
   }
 
   async cp (src, dest) {
-		let command = Command.cp(src, dest);
-		this.registry.registerCommand(command.id);
+    let command = Command.cp(src, dest);
+    this.registry.registerCommand(command.id);
     this.stdin.write(command);
     return this.identifyAndResolve("cp", command.id);
   }

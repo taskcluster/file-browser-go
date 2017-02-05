@@ -1,9 +1,10 @@
 'use strict';
 
-let EventEmitter	  = require('events').EventEmitter;
-let StringDecoder   = require('string_decoder').StringDecoder;
-let _               = require('lodash');
-let FileOperations  = require('./FileOperations');
+const
+  EventEmitter    = require('events').EventEmitter,
+  StringDecoder   = require('string_decoder').StringDecoder,
+  _               = require('lodash'),
+  FileOperations  = require('./FileOperations');
 
 const decoder = new StringDecoder();
 
@@ -61,17 +62,17 @@ class Registry extends EventEmitter {
   }
 
   processString(chunk){
-		chunk = chunk.trim();
-		if (chunk === "") {
-			return;
-		}
-		var json = {};
-		try{
-			json = JSON.parse(chunk); 
-		}catch(err){
-			console.log("Chunk: ", chunk);
-			console.error(err);
-		}	
+    chunk = chunk.trim();
+    if (chunk === "") {
+      return;
+    }
+    var json = {};
+    try{
+      json = JSON.parse(chunk); 
+    }catch(err){
+      console.log("Chunk: ", chunk);
+      console.error(err);
+    }  
     if(!json.id || !json.cmd) {
       this.emit('error', json);
       return;

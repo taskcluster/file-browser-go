@@ -19,12 +19,15 @@ describe ('Basic', function(){
     browser = new FileBrowser(shell);
   });
 
-  it('can list contents of a directory', function(done) {
-    browser.ls(TEST_HOME + '/ls').then(res => {
-      console.log(res.files);
-      assert(res.files.length == 4);
-      done();
-    });
+  it('can list contents of a directory', async function() {
+    try{
+      let result = await browser.ls(TEST_HOME + '/ls');
+      assert(result.error.length === 0);
+      assert(result.files.length === 4);
+      return null;
+    }catch(err){
+      return err;
+    }
   });
 
   it('can remove a directory', async function() {

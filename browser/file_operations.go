@@ -49,17 +49,18 @@ func GetFile (id, path string, out io.Writer) {
 	encoder := json.NewEncoder(out);
 	if !ValidateDirPath(&path) || IsDir(path) {
 		res := FailedResultSet(id, "getfile", path, "Not a valid path.");
-		encoder.Encode(res);
+		WriteJson(encoder, res);
 		return;
 	}
 	file, err := os.Open(path);
 	if err != nil {
 		res := FailedResultSet(id, "getfile",path, err.Error());
-		encoder.Encode(res);
+		WriteJson(encoder, res);
 		return;
 	}
 	maxdiv := GetFileDiv(file);
 	res := &ResultSet{
+		Id:  id,
 		Cmd: "getfile",
 		Path: path,
 		Data: &FileData{
@@ -68,7 +69,7 @@ func GetFile (id, path string, out io.Writer) {
 			Data: []byte{},
 		},
 	}
-	encoder.Encode(res);
+	WriteJson(encoder, res);
 
 	buff := make([]byte, CHUNKSIZE);
 	var i int64;
@@ -76,6 +77,7 @@ func GetFile (id, path string, out io.Writer) {
 	for i=1; i <= maxdiv; i++ {
 		n, _ := file.Read(buff);
 		res := &ResultSet{
+			Id:  id,
 			Cmd: "getfile",
 			Path: path,
 			Data: &FileData{
@@ -84,7 +86,7 @@ func GetFile (id, path string, out io.Writer) {
 				Data: buff[:n],
 			},
 		}
-		encoder.Encode(res);
+		WriteJson(encoder, res);
 	}
 }
 /*

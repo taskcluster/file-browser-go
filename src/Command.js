@@ -20,11 +20,11 @@ Command.mkdir = path => {
 	};
 }
 
-Command.cp = (oldpath, newpath) => {
+Command.cp = (src, dest) => {
 	return {
 		cmd: "cp",
 		id: slugid.v4(),
-		args: [ oldpath, newpath ]
+		args: [ src, dest ]
 	};
 }
 
@@ -36,11 +36,11 @@ Command.rm = path => {
 	};
 }
 
-Command.mv = (oldpath, newpath) => {
+Command.mv = (src, dest) => {
 	return {
 		cmd: "mv",
 		id: slugid.v4(),
-		args: [ oldpath, newpath ]
+		args: [ src, dest ]
 	};
 }
 

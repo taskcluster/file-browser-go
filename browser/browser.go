@@ -21,7 +21,7 @@ func RunCmd (cmd Command, out io.Writer) {
 	}
 	if len(cmd.Args) == 0 {
 		res := FailedResultSet(cmd.Id, cmd.Cmd,"", "Not enough arguments.");
-		encoder.Encode(res);
+		WriteJson(encoder, res);
 		return;
 	}
 
@@ -31,7 +31,7 @@ func RunCmd (cmd Command, out io.Writer) {
 
 	case "ls":
 		res := List(cmd.Id, cmd.Args[0]);
-		encoder.Encode(res);
+		WriteJson(encoder, res);
 		return;
 
 	case "getfile":
@@ -40,42 +40,42 @@ func RunCmd (cmd Command, out io.Writer) {
 
 	case "putfile":
 		res := PutFile2(cmd.Id, cmd.Args[0], cmd.Data);
-		encoder.Encode(res);
+		WriteJson(encoder, res);
 		return;
 
 	case "mv":
 		if len(cmd.Args) < 1 {
 			res := FailedResultSet(id, cmd.Cmd,"","Not enough arguments.");
-			encoder.Encode(res);
+			WriteJson(encoder, res);
 			return;
 		}
 		res := Move(cmd.Id, cmd.Args[0], cmd.Args[1]);
-		encoder.Encode(res);
+		WriteJson(encoder, res);
 		return;
 	case "cp":
 		if len(cmd.Args) < 1 {
 			res := FailedResultSet(id, cmd.Cmd,"","Not enough arguments.");
-			encoder.Encode(res);
+			WriteJson(encoder, res);
 			return;
 		}
 		res := Copy(cmd.Id, cmd.Args[0], cmd.Args[1], out);
 		if res != nil {
-			encoder.Encode(res);
+			WriteJson(encoder, res);
 		}
 		return;
 	case "rm":
 		res := Remove(cmd.Id, cmd.Args[0]);
-		encoder.Encode(res);
+		WriteJson(encoder, res);
 		return;
 
 	case "mkdir":
 		res := MakeDirectory(cmd.Id, cmd.Args[0]);
-		encoder.Encode(res);
+		WriteJson(encoder, res);
 		return;
 
 	}
 	res := FailedResultSet(id, "","","No command specified.");
-	encoder.Encode(res);
+	WriteJson(encoder, res);
 }
 
 func Run(in *os.File, out *os.File) {

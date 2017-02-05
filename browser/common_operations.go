@@ -143,7 +143,7 @@ func Copy (id, oldpath, newpath string, out io.Writer) interface{} {
 			Path: newpath,
 			Err: errStr,
 		}
-		enc.Encode(res);
+		WriteJson(enc, res);
 
 	}(id, oldpath, newpath);
 

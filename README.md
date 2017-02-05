@@ -12,13 +12,13 @@ Input format:
 
 eg.
 
-{ "Cmd": "List", "Args": ["/"] }
-{ "Cmd": "PutFile", "Args": ["/home/Hello.txt"], "Data":[72, 101, 108, 108, 111] }
-{ "Cmd": "GetFile", "Args": ["/home/Hello.txt"] }
-{ "Cmd": "MkDir", "Args": ["/home/Folder/"] }
-{ "Cmd": "Remove", "Args": ["/path/to/file/or/folder"] }
-{ "Cmd": "Move", "Args": ["path/to/file/or/folder", "target/path"] }
-{ "Cmd": "Copy", "Args": ["src/path", "dest/path"]}
+{ "cmd": "ls", "args": ["/"] }
+{ "cmd": "putfile", "args": ["/home/Hello.txt"], "data":[72, 101, 108, 108, 111] }
+{ "cmd": "getfile", "args": ["/home/Hello.txt"] }
+{ "cmd": "mkdir", "args": ["/home/Folder/"] }
+{ "cmd": "rm", "args": ["/path/to/file/or/folder"] }
+{ "cmd": "mv", "args": ["path/to/file/or/folder", "target/path"] }
+{ "cmd": "cp", "args": ["src/path", "dest/path"]}
 ```
 
 Currently supports:

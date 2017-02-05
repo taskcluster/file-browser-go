@@ -4,8 +4,18 @@ import (
 	"sync";
 	"os";
 	"path/filepath";
+	"encoding/json"
 )
 
+// Check to make sure json output does not get
+// interleaved
+
+var outLock sync.Mutex;
+func WriteJson(encoder *json.Encoder , res interface{}){
+	outLock.Lock();
+	encoder.Encode(res);
+	outLock.Unlock();
+}
 
 // Locking paths to make sure there's no interference
 

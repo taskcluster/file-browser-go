@@ -5,43 +5,29 @@ let Buffer  = require('buffer');
 let Command = require('./Command.js');
 
 // Maps path on the container to path in the local fs.
-let getfilemap = {};
 let putfilemap = {};
 
 let FileOperations = {};
 
 const CHUNKSIZE = 2048;
 
-FileOperations.getfileSetPath = (path, localPath) => {
-  getfilemap[path] = localPath;
-}
+// dest -> File on remote fs
+// src -> File on local fs
 
-FileOperations.getfileWrite = (path, data, complete) => { 
-  // Create local file to hold data
-  if (!getfilemap[path]){
-    return;
-  }
-  let localPath = getfilemap[path];
-  fs.appendFileSync(localPath, data);
-  if (complete) {
-    getfilemap[path] = null;
-  }
-}
+FileOperations.putfile = (src, dest) => {
+  if (!putfilemap[dest]) {
 
-FileOperations.putfile = (localPath, path) => {
-  if (!putfilemap[path]) {
-
-    if (fs.existsSync(localPath) && fs.statSync(localPath).isFile()){
-      let fd = fs.openSync(localPath);
-      putfilemap[path] = [ fd, 0 ];
+    if (fs.existsSync(src) && fs.statSync(src).isFile()){
+      let fd = fs.openSync(src);
+      putfilemap[dest] = [ fd, 0 ];
     }else{
       return null;
     }
 
   }
   
-  let fd = putfilemap[path][0];
-  let pos = putfilemap[path][1];
+  let fd = putfilemap[dest][0];
+  let pos = putfilemap[dest][1];
 
   let buf = Buffer.alloc(CHUNKSIZE);
 
@@ -51,27 +37,27 @@ FileOperations.putfile = (localPath, path) => {
 
   // Blank file
   if(bytes == 0 && pos == 0) {
-    trailingCommand = Command.putfile(path, Buffer.alloc(0));
-    putfilemap[path] = null;
+    trailingCommand = Command.putfile(dest, Buffer.alloc(0));
+    putfilemap[dest] = null;
     return [trailingCommand, trailingCommand];
   }
 
   // Special case which may occur if size of file
   // is a multiple of CHUNKSIZE
   if(bytes == 0) {
-    putfilemap[path] = null;
-    return [ Command.putfile(path, Buffer.alloc(0)) ];
+    putfilemap[dest] = null;
+    return [ Command.putfile(dest, Buffer.alloc(0)) ];
   }
 
   if (bytes < CHUNKSIZE) {
-    trailingCommand = Command.putfile(path, Buffer.alloc(0));
-    putfilemap[path] = null;
+    trailingCommand = Command.putfile(dest, Buffer.alloc(0));
+    putfilemap[dest] = null;
   }
 
-  command = Command.putfile(path, buf);
+  command = Command.putfile(dest, buf);
 
   // Increment position
-  putfilemap[path][1] += bytes;
+  putfilemap[dest][1] += bytes;
 
   if (trailingCommand) {
     return [ command, trailingCommand ];
@@ -79,6 +65,10 @@ FileOperations.putfile = (localPath, path) => {
     return [ command ];
   }
 
+}
+
+FileOperations.putfileClean = (dest) => {
+  putfilemap[dest] = null;  
 }
 
 

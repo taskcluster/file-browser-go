@@ -4,6 +4,7 @@ const
   EventEmitter    = require('events').EventEmitter,
   StringDecoder   = require('string_decoder').StringDecoder,
   _               = require('lodash'),
+	debug						=	require('debug')('registry'),
   FileOperations  = require('./FileOperations');
 
 const decoder = new StringDecoder();
@@ -14,7 +15,6 @@ class Registry extends EventEmitter {
     super();
 
     this.outputStream = outputStream;
-    this.register = [];
 
     this.curBuff = "";
     this.pairCount = 0;
@@ -69,6 +69,7 @@ class Registry extends EventEmitter {
     var json = {};
     try{
       json = JSON.parse(chunk); 
+			debug(json);
     }catch(err){
       console.log("Chunk: ", chunk);
       console.error(err);
@@ -78,18 +79,9 @@ class Registry extends EventEmitter {
       return;
     }
 
-    if(_.indexOf(this.register, json.id) === -1){
-      this.emit('error', json);
-      return;
-    }
-    _.remove(this.register, (n) => { n == json.id });
     // Not the last chunk returned by getfile
     this.emit(json.cmd, json);
     return;
-  }
-
-  registerCommand(id){
-    this.register.push(id);
   }
 
 }

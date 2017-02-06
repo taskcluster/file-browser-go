@@ -32,5 +32,5 @@ make_ls
 make_rm
 make_mv
 make_cp
-npm test
+DEBUG=browser,test,registry npm test
 rm -rf test_dir

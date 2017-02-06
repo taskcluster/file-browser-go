@@ -113,7 +113,12 @@ func PutFile(id, path string, data []byte) interface{} {
 		return FailedResultSet(id, "putfile",path, err.Error());
 	}
 	defer file.Close();
-	_,_ = file.Write(data);
+	_,err = file.Write(data);
+
+  if err != nil {
+		return FailedResultSet(id, "putfile",path, err.Error());
+  }
+
 	return &ResultSet{
 		Id : id,
 		Cmd: "putfile",

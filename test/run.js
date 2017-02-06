@@ -1,10 +1,14 @@
 /* Check if it works */
 const
   child_process = require('child_process'),
+	debug					=	require('debug')('test'),
   FileBrowser   = require('../lib/FileBrowser'),
   assert        = require('assert'),
   fs            = require('fs'),
-  _             = require('lodash');
+  _             = require('lodash'),
+  StringDecoder = require('string_decoder').StringDecoder;
+
+const decoder = new StringDecoder();
 
 let browser, shell;
 
@@ -99,6 +103,51 @@ describe ('Basic', function(){
       return null;
 
     }catch(err){
+      return err;
+    }
+  });
+
+  it('can get a file', async function () {
+    const fileName = TEST_HOME + '/ls/getfileTest.txt';
+    const destFile = TEST_HOME + '/getfileTest.txt';
+    try {
+      // Create a new file and append 'Hello'
+      fs.appendFileSync(fileName, "Hello");
+
+      // Run getfile
+      let result = await browser.getfile(fileName, destFile);
+			debug('getfile result: ',result);
+      assert(result != null);
+      
+      //Check if contents are the same
+      let str = decoder.write(fs.readFileSync(destFile));
+      let target = decoder.write(fs.readFileSync(fileName));
+      assert(str === target);
+      return null;
+
+    }catch(err) {
+      console.log(err);
+      return err;
+    } 
+  });
+
+  it('putfile test', async function () {
+    const fileName = TEST_HOME + '/putFileTest.txt';
+    const dest = TEST_HOME + '/ls/putFileTest.txt';
+    try{
+      // Create file 
+      fs.appendFileSync(fileName, "Hello");
+
+      let result = await browser.putfile(fileName, dest);
+      assert(result.error === "");
+
+      let src = fs.readFileSync(fileName);
+      let target = fs.readFileSync(dest);
+      console.log(src,target);
+      assert(src === target);
+      return null;
+    }catch(err){
+      console.log(err);
       return err;
     }
   });

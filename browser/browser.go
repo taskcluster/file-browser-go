@@ -4,6 +4,7 @@ import (
 	"os";
 	"encoding/json";
 	"io";
+  "fmt";
 )
 
 type Command struct {
@@ -85,6 +86,7 @@ func Run(in *os.File, out *os.File) {
 	for {
 		err = decoder.Decode(&cmd);
 		if err != nil {
+      fmt.Print(err.Error());
 			break;
 		}
 		RunCmd(cmd, out);

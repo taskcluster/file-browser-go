@@ -3,13 +3,15 @@
 
 const
   through2  = require('through2'),
-  assert     = require('assert'),
+  assert    = require('assert'),
+	debug			= require('debug')('browser'),
+	Buffer		= require('buffer').Buffer,
   fs        = require('fs');
 
 const
   Command         = require('./Command.js'),
-  FileOperations   = require('./FileOperations.js'),
-  Registry         = require('./Registry.js'),
+  FileOperations  = require('./FileOperations.js'),
+  Registry        = require('./Registry.js'),
   StringDecoder   = require('string_decoder').StringDecoder;
 
 const decoder = new StringDecoder();
@@ -39,7 +41,6 @@ class FileBrowser {
 
       self[c] = (src, dest) => {
         let cmd = Command[c](src, dest);
-        self.registry.registerCommand(cmd.id);
         self.stdin.write(cmd);
         return self.identifyAndResolve(cmd.cmd, cmd.id);
       }
@@ -50,7 +51,6 @@ class FileBrowser {
 
       self[c] = (path) => {
         let cmd = Command[c](path);
-        self.registry.registerCommand(cmd.id);
         self.stdin.write(cmd);
         return self.identifyAndResolve(cmd.cmd, cmd.id);
       }
@@ -112,7 +112,7 @@ class FileBrowser {
     let cmd = [], fail = false;
     let result = {};
 
-    while(cmd.len < 2 && !fail){
+    while(cmd.length < 2 && !fail){
       cmd = FileOperations.putfile(src, dest);
       if(cmd === null) return {
         error: "Error opening file for reading"
@@ -121,9 +121,8 @@ class FileBrowser {
       for (let i in cmd){
 
         let c = cmd[i];
-        this.registry.registerCommand(c);
         this.stdin.write(c);
-        result = await identifyAndResolve(c.cmd, c.id);
+        result = await this.identifyAndResolve(c.cmd, c.id);
         
         if (result.error !== "") {
           fail = true;
@@ -140,26 +139,29 @@ class FileBrowser {
   async getfile (src , dest) {
 
     let cmd = Command.getfile(src); 
-    let block, totalPieces, i;
+    let block, total = 0;
 
-    this.registry.registerCommand(cmd.id);
-    this.stdin.write(command);
+    this.stdin.write(cmd);
     
-    block = await this.identifyAndResolve(cmd.cmd, cmd.id);
-
-    if (block.error !== "" ){
-      console.error(block);
-      return null;
-    }
-
-    totalPieces = initBlock.fileData.totalPieces;
-    
-    for(i = 0; i < totalPieces; i++) {
-      block = await this.identifyAndResolve(cmd.cmd, cmd.id);
-      fs.appendFileSync(dest, block.fileData.data);
-    }
-
-    return dest;
+		return new Promise(resolve => {
+			this.registry.on('getfile', res => {
+				if(res.id != cmd.id) return;
+				debug(res);
+				if(res.error != ''){
+					debug(res.error);
+					return resolve(null);
+				}
+				if (res.fileData.currentPiece == 0){
+					total = res.fileData.totalPieces;
+					return;
+				}
+				let str = Buffer.from(res.fileData.data, 'base64');
+				fs.appendFileSync(dest, str);
+				if(res.fileData.currentPiece == total){
+					return resolve(dest);
+				}
+			});
+		});
 
   }
 

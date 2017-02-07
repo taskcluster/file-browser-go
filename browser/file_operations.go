@@ -4,7 +4,7 @@ import (
 	"os";
 	"io";
 	"io/ioutil";
-	"encoding/json";
+	"gopkg.in/vmihailenco/msgpack.v2";
 	"path/filepath";
 )
 
@@ -29,7 +29,7 @@ const CHUNKSIZE = 2048
 	}
 
 	The file is then read in chunks of size CHUNKSIZE and
-	written to stdout in json format.
+	written to stdout in msgpack format.
 */
 
 func GetFileDiv (file *os.File) int64 {
@@ -46,16 +46,16 @@ func GetFileDiv (file *os.File) int64 {
 func GetFile (id, path string, out io.Writer) {
 	OpAdd();
 	defer OpDone();
-	encoder := json.NewEncoder(out);
+	encoder := msgpack.NewEncoder(out);
 	if !ValidateDirPath(&path) || IsDir(path) {
 		res := FailedResultSet(id, "getfile", path, "Not a valid path.");
-		WriteJson(encoder, res);
+		WriteOut(encoder, res);
 		return;
 	}
 	file, err := os.Open(path);
 	if err != nil {
 		res := FailedResultSet(id, "getfile",path, err.Error());
-		WriteJson(encoder, res);
+		WriteOut(encoder, res);
 		return;
 	}
 	maxdiv := GetFileDiv(file);
@@ -69,7 +69,7 @@ func GetFile (id, path string, out io.Writer) {
 			Data: []byte{},
 		},
 	}
-	WriteJson(encoder, res);
+	WriteOut(encoder, res);
 
 	buff := make([]byte, CHUNKSIZE);
 	var i int64;
@@ -86,7 +86,7 @@ func GetFile (id, path string, out io.Writer) {
 				Data: buff[:n],
 			},
 		}
-		WriteJson(encoder, res);
+		WriteOut(encoder, res);
 	}
 }
 /*

@@ -4,14 +4,14 @@ import (
 	"sync";
 	"os";
 	"path/filepath";
-	"encoding/json"
+	"gopkg.in/vmihailenco/msgpack.v2";
 )
 
-// Check to make sure json output does not get
+// Check to make sure msgpack output does not get
 // interleaved
 
 var outLock sync.Mutex;
-func WriteJson(encoder *json.Encoder , res interface{}){
+func WriteOut(encoder *msgpack.Encoder , res interface{}){
 	outLock.Lock();
 	encoder.Encode(res);
 	outLock.Unlock();

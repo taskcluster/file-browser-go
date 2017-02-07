@@ -32,3 +32,5 @@ lib
 .test
 
 file-browser-go
+src/gopkg.in/
+npm-debug.log

@@ -4,8 +4,8 @@ import (
 	"os";
 	"io";
 	"path/filepath";
-	"encoding/json";
 	"container/list";
+	"gopkg.in/vmihailenco/msgpack.v2";
 )
 
 func Move (id, oldpath, newpath string) interface{} {
@@ -80,7 +80,7 @@ func Copy (id, oldpath, newpath string, out io.Writer) interface{} {
 		// Release the lock after the goroutine completes
 		defer OpDone();
 
-		enc := json.NewEncoder(out);
+		enc := msgpack.NewEncoder(out);
 		queue := list.New();
 		lockedPaths := make([]string,0);
 		queue.PushBack(oldpath);
@@ -143,7 +143,7 @@ func Copy (id, oldpath, newpath string, out io.Writer) interface{} {
 			Path: newpath,
 			Err: errStr,
 		}
-		WriteJson(enc, res);
+		WriteOut(enc, res);
 
 	}(id, oldpath, newpath);
 

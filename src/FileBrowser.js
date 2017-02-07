@@ -6,6 +6,7 @@ const
   assert    = require('assert'),
 	debug			= require('debug')('browser'),
 	Buffer		= require('buffer').Buffer,
+	msgpack		=	require('msgpack'),
   fs        = require('fs');
 
 const
@@ -28,7 +29,7 @@ class FileBrowser {
     this.stdin = through2({
       objectMode: true
     }, (chunk, encoding, cb) => {
-      cb(null, JSON.stringify(chunk));
+      cb(null, msgpack.pack(chunk));
     });
 
     this.stdin.pipe(this.shell.stdin);

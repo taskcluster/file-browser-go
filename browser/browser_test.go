@@ -7,7 +7,7 @@ import (
 	"io";
 	"io/ioutil";
 	"math/rand";
-	"encoding/json";
+	"gopkg.in/vmihailenco/msgpack.v2";
 )
 
 func TestList(t *testing.T) {
@@ -19,7 +19,7 @@ func TestList(t *testing.T) {
 	FailNotNil(err, t);
 	err = os.Mkdir(filepath.Join(temp, "b"), 0777);
 	FailNotNil(err, t);
-	res := List(temp).(*ResultSet);
+	res := List("test", temp).(*ResultSet);
 	if res.Err != "" {
 		t.Fail();
 	}
@@ -29,7 +29,7 @@ func TestList(t *testing.T) {
 }
 
 func TestListNotExist(t *testing.T) {
-	res := List("does/not/exist").(*ResultSet);
+	res := List("test","does/not/exist").(*ResultSet);
 	if res.Err == "" {
 		t.Log("Error should occur.");
 		t.Fail();
@@ -43,7 +43,7 @@ func TestMakeDirectoryAndRemove(t *testing.T) {
 	paths := []string{"/test_folder","/test_folder/sub_folder"};
 
 	defer func() {
-		r := Remove(filepath.Join(home, paths[0])).(*ResultSet);
+		r := Remove("test", filepath.Join(home, paths[0])).(*ResultSet);
 		if r.Err != "" {
 			t.Log(r.Err);
 			t.Fail();
@@ -51,7 +51,7 @@ func TestMakeDirectoryAndRemove(t *testing.T) {
 	}();
 
 	for _, p := range paths {
-		res := MakeDirectory(filepath.Join(home, p)).(*ResultSet);
+		res := MakeDirectory("test", filepath.Join(home, p)).(*ResultSet);
 		if res.Err != "" {
 			t.Log(res.Err);
 			t.Fail();
@@ -64,7 +64,7 @@ func TestMakeDirectoryAndRemove(t *testing.T) {
 }
 
 func TestMakeDirectoryBadPath(t *testing.T) {
-	res := MakeDirectory("does/not/exist").(*ResultSet);
+	res := MakeDirectory("test","does/not/exist").(*ResultSet);
 	if res.Err == "" {
 		t.Log("Error should occur.");
 		t.FailNow();
@@ -83,7 +83,7 @@ func TestCopy (t *testing.T) {
 
 	// Create a directory for copying
 	for _, p := range dir {
-		res := MakeDirectory(filepath.Join(home,p));
+		res := MakeDirectory("test", filepath.Join(home,p));
 		if err := res.(*ResultSet).Err; err != "" {
 			t.Log(err);
 			t.FailNow();
@@ -94,11 +94,11 @@ func TestCopy (t *testing.T) {
 	d2 := filepath.Join(home,"copy_to/");
 
 	defer func() {
-		_ = Remove(d1);
-		_ = Remove(d2);
+		_ = os.Remove(d1);
+		_ = os.Remove(d2);
 	}();
 
-	_ = Copy(d1, d2, ioutil.Discard);
+	_ = Copy("test", d1, d2, ioutil.Discard);
 	WaitForOperationsToComplete();
 
 	if CompareDirectory(d1, filepath.Join(d2, "copy_folder")) == false {
@@ -108,7 +108,7 @@ func TestCopy (t *testing.T) {
 }
 
 func TestCopySrcNotExist (t *testing.T){
-	res := Copy("does/not/exist", os.TempDir(), ioutil.Discard).(*ResultSet);
+	res := Copy("test" ,"does/not/exist", os.TempDir(), ioutil.Discard).(*ResultSet);
 	if res.Err == "" {
 		t.Log("Error should occur.");
 		t.FailNow();
@@ -120,7 +120,7 @@ func TestCopyDestNotExist(t *testing.T) {
 	f, err := ioutil.TempFile("", "existent_source");
 	FailNotNil(err, t);
 	f.Close();
-	res := Copy(f.Name(), "does/not/exist", ioutil.Discard).(*ResultSet);
+	res := Copy("test", f.Name(), "does/not/exist", ioutil.Discard).(*ResultSet);
 	if res.Err == "" {
 		t.Log("Error should occur.");
 		t.FailNow();
@@ -182,7 +182,7 @@ func TestGetFile (t *testing.T) {
 	_ = tf.Close();
 
 	// Get the file and write output to outputFile
-	GetFile(fp, outputFile);
+	GetFile("test", fp, outputFile);
 	WaitForOperationsToComplete();
 	// Close the file after writing
 	outputFile.Close();
@@ -192,7 +192,7 @@ func TestGetFile (t *testing.T) {
 	FailNotNil(err, t);
 
 	// Create decoder from GetFile output
-	jsonDec := json.NewDecoder(outputFile);
+	msgpackDec := msgpack.NewDecoder(outputFile);
 	err = nil;
 	res := &ResultSet{};
 
@@ -203,7 +203,7 @@ func TestGetFile (t *testing.T) {
 	compBuff := []byte{};
 
 	for err != io.EOF {
-		err = jsonDec.Decode(res);
+		err = msgpackDec.Decode(res);
 		if err != nil {
 			t.Log(err);
 			break;
@@ -246,13 +246,13 @@ func TestGetFileEmpty(t *testing.T) {
 
 	tp := tf.Name();
 	op := of.Name();
-	GetFile(tp, of);
+	GetFile("test", tp, of);
 	WaitForOperationsToComplete();
 
 	of.Close();
 
 	of, err = os.OpenFile(op, os.O_RDONLY, 0777);
-	jsonDec := json.NewDecoder(of);
+	msgpackDec := msgpack.NewDecoder(of);
 
 	var max int64 = -1;
 	err = nil;
@@ -261,7 +261,7 @@ func TestGetFileEmpty(t *testing.T) {
 	tempBuff := []byte{};
 
 	for err != io.EOF {
-		err = jsonDec.Decode(res);
+		err = msgpackDec.Decode(res);
 		if err != nil {
 			t.Log(err);
 			break;
@@ -293,14 +293,14 @@ func TestGetFileNotExist(t *testing.T) {
 	op, err := ioutil.TempFile("", "get_file_not_exist_op");
 	FailNotNil(err, t);
 
-	GetFile(path, op);
+	GetFile("test", path, op);
 	WaitForOperationsToComplete();
 	op.Close();
 
 	op, err = os.Open(op.Name());
 	FailNotNil(err, t);
 
-	dec := json.NewDecoder(op);
+	dec := msgpack.NewDecoder(op);
 	var res *ResultSet = nil;
 	dec.Decode(&res);
 	if res.Err == "" {
@@ -351,14 +351,14 @@ func TestPutFile (t *testing.T) {
 			count++;
 		}
 		t.Log("Chunk Length: ", len(w));
-		res := PutFile2(newpath, w).(*ResultSet);
+		res := PutFile2("test", newpath, w).(*ResultSet);
 		if res.Err != "" {
 			t.FailNow();
 
-			_ = PutFile(newpath, []byte{});
+			_ = PutFile("test", newpath, []byte{});
 		}
 	}
-	_ = PutFile2(newpath, []byte{});
+	_ = PutFile2("test", newpath, []byte{});
 	file, err := os.OpenFile(newpath, os.O_RDONLY, 0777);
 	defer os.Remove(newpath);
 	FailNotNil(err, t);
@@ -377,8 +377,8 @@ func TestPutFile (t *testing.T) {
 
 func TestPutFileEmpty(t *testing.T) {
 	newpath := filepath.Join(os.TempDir(), "put_file_empty_test");
-	PutFile2(newpath, []byte{});
-	PutFile2(newpath, []byte{});
+	PutFile2("test", newpath, []byte{});
+	PutFile2("test", newpath, []byte{});
 	file, err := os.Open(newpath);
 	FailNotNil(err, t);
 	defer file.Close();
@@ -391,7 +391,7 @@ func TestPutFileEmpty(t *testing.T) {
 
 func TestPutFileNotExists(t *testing.T) {
 	path := "this/path/does/not/exist";
-	res := PutFile2(path, []byte{}).(*ResultSet);
+	res := PutFile2("test", path, []byte{}).(*ResultSet);
 	if res.Err == "" {
 		t.Log("Error should occur");
 		t.FailNow();

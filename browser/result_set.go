@@ -1,24 +1,24 @@
 package browser;
 
 type FileData struct {
-	TotalPieces int64 `json:"totalPieces"`
-	CurrentPiece int64 `json:"currentPiece"`
-	Data []byte `json:"data"`
+	TotalPieces int64 `msgpack:"totalPieces"`
+	CurrentPiece int64 `msgpack:"currentPiece"`
+	Data []byte `msgpack:"data"`
 }
 
 type FileInfo struct {
-	Name string  `json:"name"`
-	Size int64 `json:"size"`
-	Dir bool `json:"dir"`
+	Name string  `msgpack:"name"`
+	Size int64 `msgpack:"size"`
+	Dir bool `msgpack:"dir"`
 }
 
 type ResultSet struct {
-	Id string `json:"id"`
-	Cmd string `json:"cmd"`
-	Path string `json:"path"`
-	Err string `json:"error"`
-	Files []FileInfo `json:"files"`
-	Data *FileData `json:"fileData"`
+	Id string `msgpack:"id"`
+	Cmd string `msgpack:"cmd"`
+	Path string `msgpack:"path"`
+	Err string `msgpack:"error"`
+	Files []FileInfo `msgpack:"files"`
+	Data *FileData `msgpack:"fileData"`
 }
 
 func FailedResultSet (cmd, path, id, err string) *ResultSet {

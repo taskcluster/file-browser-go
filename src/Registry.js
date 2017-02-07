@@ -2,12 +2,13 @@
 
 const
   EventEmitter    = require('events').EventEmitter,
-  StringDecoder   = require('string_decoder').StringDecoder,
-  _               = require('lodash'),
+  // StringDecoder   = require('string_decoder').StringDecoder,
+  // _               = require('lodash'),
 	debug						=	require('debug')('registry'),
-  FileOperations  = require('./FileOperations');
+	msgpack					=	require('msgpack'),
+  // FileOperations  = require('./FileOperations');
 
-const decoder = new StringDecoder();
+// const decoder = new StringDecoder();
 
 class Registry extends EventEmitter {
 
@@ -16,6 +17,7 @@ class Registry extends EventEmitter {
 
     this.outputStream = outputStream;
 
+		/*
     this.curBuff = "";
     this.pairCount = 0;
     this.curBuffIndex = 0;
@@ -58,29 +60,24 @@ class Registry extends EventEmitter {
       if(this.curBuff === "") return;
       this.processString(this.curBuff);
     });
+		*/
+
+		let msgStream = new msgpack.Stream(this.outputStream);
+		msgStream.addListener('msg', msg => {
+			debug(msg);	
+			this.process(msg);
+		});
 
   }
 
-  processString(chunk){
-    chunk = chunk.trim();
-    if (chunk === "") {
-      return;
-    }
-    var json = {};
-    try{
-      json = JSON.parse(chunk); 
-			debug(json);
-    }catch(err){
-      console.log("Chunk: ", chunk);
-      console.error(err);
-    }  
-    if(!json.id || !json.cmd) {
-      this.emit('error', json);
+  process(msg){
+    if(!msg.id || !msg.cmd) {
+      this.emit('error', msg);
       return;
     }
 
     // Not the last chunk returned by getfile
-    this.emit(json.cmd, json);
+    this.emit(msg.cmd, msg);
     return;
   }
 

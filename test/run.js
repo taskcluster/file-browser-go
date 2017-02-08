@@ -123,7 +123,8 @@ describe ('Basic', function(){
       //Check if contents are the same
       let str = decoder.write(fs.readFileSync(destFile));
       let target = decoder.write(fs.readFileSync(fileName));
-      assert(str === target);
+      debug(str, target);
+      assert(str == target);
       return null;
 
     }catch(err) {
@@ -144,7 +145,7 @@ describe ('Basic', function(){
 
       let src = fs.readFileSync(fileName);
       let target = fs.readFileSync(dest);
-      console.log(src,target);
+      debug(src,target);
       assert(src.equals(target));
       return null;
     }catch(err){

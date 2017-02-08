@@ -7,18 +7,22 @@ const
   Buffer    = require('buffer').Buffer,
   msp       = require('msgpack-lite'),
   through2  = require('through2'),
+  Promise   = require('Promise'),
   fs        = require('fs');
 
 const
   Command         = require('./Command.js'),
   FileOperations  = require('./FileOperations.js'),
+  EventEmitter    = require('events').EventEmitter,
   StringDecoder   = require('string_decoder').StringDecoder;
 
 const decoder = new StringDecoder();
 
-class FileBrowser {
+class FileBrowser extends EventEmitter {
   
   constructor(shell) {
+
+    super();
 
     assert(shell);
     assert(shell.stdin);
@@ -43,7 +47,13 @@ class FileBrowser {
     this.testOut.on('data', (data) => {
       debug("Wrote: ", data);
     });
-    this.stdout.on('data', debug);
+
+    this.stdout.on('data', (data) => {
+      if(!data.id) return;
+      debug('Received: ', data);
+      this.emit(data.id, data);
+    });
+
     this.stdout.on('error', debug);
     this.stdin.on('error', debug);
 
@@ -53,8 +63,7 @@ class FileBrowser {
 
       self[c] = (src, dest) => {
         let cmd = Command[c](src, dest);
-        self.stdin.write(cmd);
-        return self.identifyAndResolve(c, cmd.id);
+        return self.writeAndResolve(cmd);
       }
 
     });
@@ -63,61 +72,21 @@ class FileBrowser {
 
       self[c] = (path) => {
         let cmd = Command[c](path);
-        self.stdin.write(cmd);
-        return self.identifyAndResolve(c, cmd.id);
+        return self.writeAndResolve(cmd);
       }
 
     });
   }
 
   
-  identifyAndResolve (cmd, id) {
+  writeAndResolve (cmd) {
     let self = this;
-    return new Promise((resolve, reject) => {
-      return self.stdout.on('data', resultSet => {
-        let rid = resultSet.id;
-        if(id == rid && resultSet.cmd == cmd) {
-          return resolve(resultSet);
-        }
-      });
+    return new Promise(resolve => {
+      self.stdin.write(cmd);
+      return self.once(cmd.id, resolve);
     });
   }
-/*
-  async ls(path) {
-    let command = Command.ls(path);
-    this.stdout.registerCommand(command.id);
-    this.stdin.write(command);
-    return this.identifyAndResolve("ls", command.id);
-  }
 
-  async rm (path) {
-    let cmd = Command.rm(path);
-    this.stdout.registerCommand(cmd.id);
-    this.stdin.write(cmd);
-    return this.identifyAndResolve("rm", cmd.id);
-  }
-
-  async mv (src, dest) {
-    let command = Command.mv(src, dest);
-    this.stdout.registerCommand(command.id);
-    this.stdin.write(command);
-    return this.identifyAndResolve("mv", command.id);
-  }
-
-  async mkdir (path) {
-    let command = Command.mkdir(path);
-    this.stdout.registerCommand(command.id);
-    this.stdin.write(command);
-    return this.identifyAndResolve("mkdir", path);
-  }
-
-  async cp (src, dest) {
-    let command = Command.cp(src, dest);
-    this.stdout.registerCommand(command.id);
-    this.stdin.write(command);
-    return this.identifyAndResolve("cp", command.id);
-  }
-*/
   async putfile (src , dest) {  
 
     let cmd = [], fail = false;
@@ -132,8 +101,7 @@ class FileBrowser {
       for (let i in cmd){
 
         let c = cmd[i];
-        this.stdin.write(c);
-        result = await this.identifyAndResolve('putfile', c.id);
+        result = await this.writeAndResolve(c);
         
         if (result.error !== "") {
           fail = true;
@@ -152,11 +120,9 @@ class FileBrowser {
     let cmd = Command.getfile(src); 
     let block, total = 0;
 
-    this.stdin.write(cmd);
-    
-    return new Promise(resolve => {
-      this.stdout.on('data', res => {
-        if(res.id != cmd.id) return;
+    let value = await new Promise(resolve => {
+      this.stdin.write(cmd);
+      this.on(cmd.id, res => {
         if(res.error != ''){
           debug(res.error);
           return resolve(null);
@@ -169,8 +135,12 @@ class FileBrowser {
         if(res.fileData.currentPiece == total){
           return resolve(dest);
         }
-      }).on('error', debug);
+      });
     });
+
+    this.removeAllListeners(cmd.id);
+    debug('Removed listener for getfile id: ', cmd.id);
+    return value;
 
   }
 

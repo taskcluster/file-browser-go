@@ -11,9 +11,10 @@ var run = async () => {
     });
     let fb = new FileBrowser(shell);
     let result;
-		ls(fb, '/');
-		ls(fb, '/Users/chinmaykousik/');
+		await ls(fb, '/');
+		await ls(fb, '/Users/chinmaykousik/');
 		await fb.kill();
+    console.log('start');
   }catch(e){
     console.error(e);
   }
@@ -24,6 +25,7 @@ var run = async () => {
 var ls = async (fileBrowser, path) => {
 	let result = await fileBrowser.ls(path);
 	console.log(result);
+  return;
 }
 
 run();

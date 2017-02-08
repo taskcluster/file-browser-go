@@ -82,12 +82,16 @@ func RunCmd (cmd Command, out io.Writer) {
 func Run(in *os.File, out *os.File) {
 	decoder := msgpack.NewDecoder(in);
 	var cmd Command;
-	var err error = nil;
-	for err = decoder.Decode(&cmd) ; err == nil ; {
+  var err error = nil;
+  for {
+    err = decoder.Decode(&cmd);
+    if err != nil {
+      fmt.Print(err.Error());
+      break;
+    }
 		RunCmd(cmd, out);
 	}
-	if err == io.EOF {
-		return
-	}
-	fmt.Println(err.Error());
+  if(err == io.EOF){
+    return
+  }
 }

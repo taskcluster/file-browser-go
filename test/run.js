@@ -12,7 +12,7 @@ const decoder = new StringDecoder();
 
 let browser, shell;
 
-const TEST_HOME = process.env.TEST_HOME
+const TEST_HOME = process.env.TEST_HOME;
 
 describe ('Basic', function(){
 
@@ -91,6 +91,7 @@ describe ('Basic', function(){
       assert(fs.existsSync(TEST_HOME + '/mvfile'));
 
       let result = await browser.mv(TEST_HOME + '/mvfile', TEST_HOME + '/mvdir/mvfile');
+      debug(result);
       assert(result.error.length === 0);
 
       assert(fs.existsSync(TEST_HOME + '/mvdir/mvfile'));
@@ -144,7 +145,7 @@ describe ('Basic', function(){
       let src = fs.readFileSync(fileName);
       let target = fs.readFileSync(dest);
       console.log(src,target);
-      assert(src === target);
+      assert(src.equals(target));
       return null;
     }catch(err){
       console.log(err);

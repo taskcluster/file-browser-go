@@ -2,11 +2,11 @@
 /* API for all file-browser commands */
 
 const
-  through2  = require('through2'),
   assert    = require('assert'),
-	debug			= require('debug')('browser'),
-	Buffer		= require('buffer').Buffer,
-	msgpack		=	require('msgpack'),
+  debug     = require('debug')('browser'),
+  Buffer    = require('buffer').Buffer,
+  msp       = require('msgpack-lite'),
+  through2  = require('through2'),
   fs        = require('fs');
 
 const
@@ -20,21 +20,33 @@ const decoder = new StringDecoder();
 class FileBrowser {
   
   constructor(shell) {
+
     assert(shell);
     assert(shell.stdin);
     assert(shell.stdout);
 
     this.shell = shell;   
 
-    this.stdin = through2({
-      objectMode: true
-    }, (chunk, encoding, cb) => {
-      cb(null, msgpack.pack(chunk));
+    this.stdin = through2.obj(function (chunk, enc, cb) {
+      this.push(msp.encode(chunk));
+      cb();
     });
 
-    this.stdin.pipe(this.shell.stdin);
+    this.stdout = msp.createDecodeStream();
+    this.testOut = msp.createDecodeStream();
 
-    this.registry = new Registry(this.shell.stdout);
+    this.stdin.pipe(this.shell.stdin);
+    this.stdin.pipe(this.testOut);
+    this.shell.stdout.pipe(this.stdout);
+
+    this.stdout.setMaxListeners(0);
+
+    this.testOut.on('data', (data) => {
+      debug("Wrote: ", data);
+    });
+    this.stdout.on('data', debug);
+    this.stdout.on('error', debug);
+    this.stdin.on('error', debug);
 
     let self = this;
 
@@ -43,7 +55,7 @@ class FileBrowser {
       self[c] = (src, dest) => {
         let cmd = Command[c](src, dest);
         self.stdin.write(cmd);
-        return self.identifyAndResolve(cmd.cmd, cmd.id);
+        return self.identifyAndResolve(c, cmd.id);
       }
 
     });
@@ -53,20 +65,19 @@ class FileBrowser {
       self[c] = (path) => {
         let cmd = Command[c](path);
         self.stdin.write(cmd);
-        return self.identifyAndResolve(cmd.cmd, cmd.id);
+        return self.identifyAndResolve(c, cmd.id);
       }
 
     });
   }
 
   
-  identifyAndResolve (command, id) {
-    return new Promise(resolve => {
-      return this.registry.on( command, resultSet => {
-        let cmd = resultSet.cmd;
+  identifyAndResolve (cmd, id) {
+    let self = this;
+    return new Promise((resolve, reject) => {
+      return self.stdout.on('data', resultSet => {
         let rid = resultSet.id;
-
-        if(cmd == command && id == rid ) {
+        if(id == rid && resultSet.cmd == cmd) {
           return resolve(resultSet);
         }
       });
@@ -75,35 +86,35 @@ class FileBrowser {
 /*
   async ls(path) {
     let command = Command.ls(path);
-    this.registry.registerCommand(command.id);
+    this.stdout.registerCommand(command.id);
     this.stdin.write(command);
     return this.identifyAndResolve("ls", command.id);
   }
 
   async rm (path) {
     let cmd = Command.rm(path);
-    this.registry.registerCommand(cmd.id);
+    this.stdout.registerCommand(cmd.id);
     this.stdin.write(cmd);
     return this.identifyAndResolve("rm", cmd.id);
   }
 
   async mv (src, dest) {
     let command = Command.mv(src, dest);
-    this.registry.registerCommand(command.id);
+    this.stdout.registerCommand(command.id);
     this.stdin.write(command);
     return this.identifyAndResolve("mv", command.id);
   }
 
   async mkdir (path) {
     let command = Command.mkdir(path);
-    this.registry.registerCommand(command.id);
+    this.stdout.registerCommand(command.id);
     this.stdin.write(command);
     return this.identifyAndResolve("mkdir", path);
   }
 
   async cp (src, dest) {
     let command = Command.cp(src, dest);
-    this.registry.registerCommand(command.id);
+    this.stdout.registerCommand(command.id);
     this.stdin.write(command);
     return this.identifyAndResolve("cp", command.id);
   }
@@ -123,7 +134,7 @@ class FileBrowser {
 
         let c = cmd[i];
         this.stdin.write(c);
-        result = await this.identifyAndResolve(c.cmd, c.id);
+        result = await this.identifyAndResolve('putfile', c.id);
         
         if (result.error !== "") {
           fail = true;
@@ -144,25 +155,23 @@ class FileBrowser {
 
     this.stdin.write(cmd);
     
-		return new Promise(resolve => {
-			this.registry.on('getfile', res => {
-				if(res.id != cmd.id) return;
-				debug(res);
-				if(res.error != ''){
-					debug(res.error);
-					return resolve(null);
-				}
-				if (res.fileData.currentPiece == 0){
-					total = res.fileData.totalPieces;
-					return;
-				}
-				let str = Buffer.from(res.fileData.data, 'base64');
-				fs.appendFileSync(dest, str);
-				if(res.fileData.currentPiece == total){
-					return resolve(dest);
-				}
-			});
-		});
+    return new Promise(resolve => {
+      this.stdout.on('data', res => {
+        if(res.id != cmd.id) return;
+        if(res.error != ''){
+          debug(res.error);
+          return resolve(null);
+        }
+        if (res.fileData.currentPiece == 0){
+          total = res.fileData.totalPieces;
+          return;
+        }
+        fs.appendFileSync(dest, res.fileData.data);
+        if(res.fileData.currentPiece == total){
+          return resolve(dest);
+        }
+      }).on('error', debug);
+    });
 
   }
 
@@ -170,7 +179,7 @@ class FileBrowser {
     let prom = new Promise((resolve, reject) => {
       this.shell.on('exit', resolve).on('error', reject);
     });
-    this.stdin.destroy();
+    // this.stdin.destroy();
     this.shell.kill();
     return prom;
   }

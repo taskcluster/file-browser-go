@@ -49,6 +49,11 @@ FileOperations.putfile = (src, dest) => {
   }
 
   if (bytes < CHUNKSIZE) {
+    let b = Buffer.alloc(bytes);
+    for(let i = 0; i < bytes; i++){
+      b[i] = buf[i];
+    }
+    buf = b;
     trailingCommand = Command.putfile(dest, Buffer.alloc(0));
   }
 

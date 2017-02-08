@@ -12,7 +12,6 @@ const
 const
   Command         = require('./Command.js'),
   FileOperations  = require('./FileOperations.js'),
-  Registry        = require('./Registry.js'),
   StringDecoder   = require('string_decoder').StringDecoder;
 
 const decoder = new StringDecoder();
@@ -180,6 +179,8 @@ class FileBrowser {
       this.shell.on('exit', resolve).on('error', reject);
     });
     // this.stdin.destroy();
+    this.stdin.end();
+    this.stdout.end();
     this.shell.kill();
     return prom;
   }

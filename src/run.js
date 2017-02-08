@@ -14,7 +14,6 @@ var run = async () => {
 		await ls(fb, '/');
 		await ls(fb, '/Users/chinmaykousik/');
 		await fb.kill();
-    console.log('start');
   }catch(e){
     console.error(e);
   }

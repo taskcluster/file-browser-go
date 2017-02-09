@@ -8,21 +8,23 @@ const
   msp       = require('msgpack-lite'),
   through2  = require('through2'),
   Promise   = require('Promise'),
+  lock      = require('lock')(),
+  _         = require('lodash'),
+  slugid    = require('slugid'),
   fs        = require('fs');
 
 const
-  Command         = require('./Command.js'),
-  FileOperations  = require('./FileOperations.js'),
-  EventEmitter    = require('events').EventEmitter,
-  StringDecoder   = require('string_decoder').StringDecoder;
+  Command         = require('./Command.js');
+  // FileOperations  = require('./FileOperations.js');
+  // StringDecoder   = require('string_decoder').StringDecoder;
 
-const decoder = new StringDecoder();
+const CHUNKSIZE = 4072;
 
-class FileBrowser extends EventEmitter {
+const lck = key => new Promise(resolve => lock(key, resolve));
+
+class FileBrowser {
   
   constructor(shell) {
-
-    super();
 
     assert(shell);
     assert(shell.stdin);
@@ -35,23 +37,31 @@ class FileBrowser extends EventEmitter {
       cb();
     });
 
+    // Table that maps from id to resolver
+    this._cb = {}
+
     this.stdout = msp.createDecodeStream();
-    this.testOut = msp.createDecodeStream();
+    // this.testOut = msp.createDecodeStream();
 
     this.stdin.pipe(this.shell.stdin);
-    this.stdin.pipe(this.testOut);
+    // this.stdin.pipe(this.testOut);
     this.shell.stdout.pipe(this.stdout);
 
-    this.stdout.setMaxListeners(0);
+    // this.stdout.setMaxListeners(0);
 
-    this.testOut.on('data', (data) => {
-      debug("Wrote: ", data);
-    });
+    // this.testOut.on('data', (data) => {
+    //   debug("Wrote: ", data);
+    // });
 
     this.stdout.on('data', (data) => {
       if(!data.id) return;
       debug('Received: ', data);
-      this.emit(data.id, data);
+      if (!this._cb[data.id]) {
+        debug("message for unknown id: ", data.id);
+        return;
+      }
+
+      this._cb[data.id](data);
     });
 
     this.stdout.on('error', debug);
@@ -61,18 +71,24 @@ class FileBrowser extends EventEmitter {
 
     ["mv", "cp"].forEach(c => {
 
-      self[c] = (src, dest) => {
+      self[c] = async (src, dest) => {
         let cmd = Command[c](src, dest);
-        return self.writeAndResolve(cmd);
+        let result = await self.writeAndResolve(cmd);
+        debug('Received: ', data);
+        delete this._cb[cmd.id];
+        return result;
       }
 
     });
 
     ["ls", "rm", "mkdir"].forEach(c => {
 
-      self[c] = (path) => {
+      self[c] = async (path) => {
         let cmd = Command[c](path);
-        return self.writeAndResolve(cmd);
+        let result = await self.writeAndResolve(cmd);
+        debug('Received: ', data);
+        delete this._cb[cmd.id];
+        return result;
       }
 
     });
@@ -83,64 +99,83 @@ class FileBrowser extends EventEmitter {
     let self = this;
     return new Promise(resolve => {
       self.stdin.write(cmd);
-      return self.once(cmd.id, resolve);
+      this._cb[cmd.id] = resolve;
     });
   }
 
-  async putfile (src , dest) {  
+  putfile (srcStream , dest) {  
 
-    let cmd = [], fail = false;
-    let result = {};
+    let self = this;
 
-    while(cmd.length < 2 && !fail){
-      cmd = FileOperations.putfile(src, dest);
-      if(cmd === null) return {
-        error: "Error opening file for reading"
-      };
+    return new Promise((resolve, reject) => {
 
-      for (let i in cmd){
+      // Lock to guarantee chunks are written in the correct order
+      let lk_id = slugid.v4();
+      // debug('Lock id:', lk_id);
 
-        let c = cmd[i];
-        result = await this.writeAndResolve(c);
-        
-        if (result.error !== "") {
-          fail = true;
-          break;
-        }
-      }
-    }
+      srcStream.on('error', err => {
+        debug(err);
+        reject(err);
+      });
 
-    FileOperations.putfileClean(dest);
-    return result;
+      srcStream.on('data', async data => {
+        let unlock = await lck(lk_id);
+        let fail = false;
+        try{
 
-  }
+          if (typeof data === 'string') {
+            data = Buffer.from(data);
+          }
 
-  async getfile (src , dest) {
+          let chunks = _.chunk(data.toJSON().data, CHUNKSIZE);
 
-    let cmd = Command.getfile(src); 
-    let block, total = 0;
+          for (let i in chunks) {
+            let ch = Buffer.from(chunks[i]);
+            let cmd = Command.putfile(dest, ch);
+            // debug(cmd);
+            let result = await self.writeAndResolve(cmd);
+            // debug(result);
+            if (result.error != '') {
+              fail = true;
+              break;
+            }
+          }
 
-    let value = await new Promise(resolve => {
-      this.stdin.write(cmd);
-      this.on(cmd.id, res => {
-        if(res.error != ''){
-          debug(res.error);
-          return resolve(null);
-        }
-        if (res.fileData.currentPiece == 0){
-          total = res.fileData.totalPieces;
-          return;
-        }
-        fs.appendFileSync(dest, res.fileData.data);
-        if(res.fileData.currentPiece == total){
-          return resolve(dest);
+        }finally{
+          unlock();
+          if (fail) {
+            reject('Operation failed');
+          }
         }
       });
+
+      srcStream.on('end', resolve);
     });
 
-    this.removeAllListeners(cmd.id);
-    debug('Removed listener for getfile id: ', cmd.id);
-    return value;
+  }
+
+  getfile (src , outStream) {
+
+    let cmd = Command.getfile(src); 
+    let self = this;
+
+    return new Promise(resolve => {
+      self.stdin.write(cmd);
+      self._cb[cmd.id] = (data) => {
+        debug('Getfile :', data);
+        if (data.error != '') {
+          return resolve(false);
+        }
+        if (data.fileData.currentPiece == 0) {
+          return;
+        }
+        outStream.write(data.fileData.data);
+        if (data.fileData.totalPieces == data.fileData.currentPiece) {
+          delete self._cb[cmd.id];
+          return resolve(true);
+        }
+      }
+    });
 
   }
 

@@ -114,11 +114,15 @@ describe ('Basic', function(){
     try {
       // Create a new file and append 'Hello'
       fs.appendFileSync(fileName, "Hello");
+      
+      // Create a write stream for the destination file
+      let outStream = fs.createWriteStream(destFile);
 
       // Run getfile
-      let result = await browser.getfile(fileName, destFile);
+      let result = await browser.getfile(fileName, outStream);
 			debug('getfile result: ',result);
-      assert(result != null);
+      assert(result != false);
+      outStream.close();
       
       //Check if contents are the same
       let str = decoder.write(fs.readFileSync(destFile));
@@ -139,9 +143,12 @@ describe ('Basic', function(){
     try{
       // Create file 
       fs.appendFileSync(fileName, "Hello");
+      
+      // Create readable stream for file
+      let inStream = fs.createReadStream(fileName);
 
-      let result = await browser.putfile(fileName, dest);
-      assert(result.error === "");
+      let result = await browser.putfile(inStream, dest);
+      // assert(result.error === "");
 
       let src = fs.readFileSync(fileName);
       let target = fs.readFileSync(dest);

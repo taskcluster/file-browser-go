@@ -11,7 +11,7 @@ import (
 func Move (id, oldpath, newpath string) interface{} {
 	OpAdd();
 	if IsLocked(oldpath) {
-		return FailedResultSet(id, "mv", oldpath, "Path locked for another operation.");
+		return FailedResultSet(id, "Path locked for another operation.");
 	}
 	LockPath(oldpath);
 	LockPath(newpath);
@@ -24,19 +24,19 @@ func Move (id, oldpath, newpath string) interface{} {
 
 	err := os.Rename(oldpath, newpath);
 	if err != nil {
-		return FailedResultSet(id, "mv", oldpath, err.Error());
+		return FailedResultSet(id, err.Error());
 	}
 	return &ResultSet{
 		Id : id,
-		Cmd: "mv",
-		Path: newpath,
+		// Cmd: "mv",
+		// Path: newpath,
 	}
 }
 
 func Remove (id, path string) interface{} {
 	OpAdd();
 	if IsLocked(path) {
-		return FailedResultSet(id, "mv", path, "Path locked for another operation.");
+		return FailedResultSet(id, "Path locked for another operation.");
 	}
 	LockPath(path);
 	defer func() {
@@ -45,12 +45,12 @@ func Remove (id, path string) interface{} {
 	}();
 	err := os.RemoveAll(path);
 	if err != nil {
-		return FailedResultSet(id, "rm", path, err.Error());
+		return FailedResultSet(id, err.Error());
 	}
 	return &ResultSet{
 		Id : id,
-		Cmd: "rm",
-		Path: path,
+		// Cmd: "rm",
+		// Path: path,
 	};
 }
 
@@ -59,13 +59,13 @@ func Remove (id, path string) interface{} {
 func Copy (id, oldpath, newpath string, out io.Writer) interface{} {
 	file, err := os.Open(oldpath);
 	if err != nil {
-		return FailedResultSet(id, "cp", oldpath, err.Error());
+		return FailedResultSet(id, err.Error());
 	}
 	file.Close();
 
 	finfo, err := os.Stat(newpath);
 	if err != nil || !finfo.IsDir() {
-		return FailedResultSet(id, "cp", newpath, "Destination not valid.");
+		return FailedResultSet(id, "Destination not valid.");
 	}
 
 	// Append the filename to the new path
@@ -139,8 +139,8 @@ func Copy (id, oldpath, newpath string, out io.Writer) interface{} {
 
 		res := &ResultSet{
 			Id : id,
-			Cmd: "cp",
-			Path: newpath,
+			// Cmd: "cp",
+			// Path: newpath,
 			Err: errStr,
 		}
 		WriteOut(enc, res);

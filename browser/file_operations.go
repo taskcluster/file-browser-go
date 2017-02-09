@@ -3,9 +3,9 @@ package browser;
 import (
 	"os";
 	"io";
-	"io/ioutil";
+	// "io/ioutil";
 	"gopkg.in/vmihailenco/msgpack.v2";
-	"path/filepath";
+	// "path/filepath";
 )
 
 // TODO: GetFile, PutFile, RunFile
@@ -48,17 +48,18 @@ func GetFile (id, path string, out io.Writer) {
 	defer OpDone();
 	encoder := msgpack.NewEncoder(out);
 	if !ValidateDirPath(&path) || IsDir(path) {
-		res := FailedResultSet(id, "getfile", path, "Not a valid path.");
+		res := FailedResultSet(id, "Not a valid path.");
 		WriteOut(encoder, res);
 		return;
 	}
 	file, err := os.Open(path);
 	if err != nil {
-		res := FailedResultSet(id, "getfile",path, err.Error());
+		res := FailedResultSet(id,  err.Error());
 		WriteOut(encoder, res);
 		return;
 	}
 	maxdiv := GetFileDiv(file);
+  /*
 	res := &ResultSet{
 		Id:  id,
 		Cmd: "getfile",
@@ -70,16 +71,28 @@ func GetFile (id, path string, out io.Writer) {
 		},
 	}
 	WriteOut(encoder, res);
+  */
 
 	buff := make([]byte, CHUNKSIZE);
 	var i int64;
 	defer file.Close();
 	for i=1; i <= maxdiv; i++ {
-		n, _ := file.Read(buff);
+		n,err := file.Read(buff);
+
+    if err != nil {
+      WriteOut(encoder, &ResultSet{
+        Id: id,
+        // Cmd: 'getfile',
+        // Path: path,
+        Err: err.Error(),
+      });
+      return;
+    }
+
 		res := &ResultSet{
 			Id:  id,
-			Cmd: "getfile",
-			Path: path,
+			// Cmd: "getfile",
+			// Path: path,
 			Data: &FileData{
 				TotalPieces: maxdiv,
 				CurrentPiece: i,
@@ -110,19 +123,19 @@ func PutFile(id, path string, data []byte) interface{} {
 	file, err := os.OpenFile(path, os.O_CREATE | os.O_APPEND | os.O_WRONLY, 0666);
 	if err != nil {
 		// fmt.Println(err.Error());
-		return FailedResultSet(id, "putfile",path, err.Error());
+		return FailedResultSet(id, err.Error());
 	}
 	defer file.Close();
 	_,err = file.Write(data);
 
   if err != nil {
-		return FailedResultSet(id, "putfile",path, err.Error());
+		return FailedResultSet(id, err.Error());
   }
 
 	return &ResultSet{
 		Id : id,
-		Cmd: "putfile",
-		Path: path,
+		// Cmd: "putfile",
+		// Path: path,
 	};
 }
 
@@ -133,7 +146,6 @@ params:
 	path : string, path where the file is to be written
 	data : []byte, data to be written to the file
 
-*/
 
 var tempPath map[string]string = make(map[string]string);
 
@@ -170,7 +182,7 @@ func PutFile2 (id, path string, data []byte) interface{} {
 		LockPath(tempPath[path]);
 		return &ResultSet{
 			Id : id,
-			Cmd: "putfile",
+			// Cmd: "putfile",
 			Path: path,
 		}
 	}
@@ -184,8 +196,8 @@ func PutFile2 (id, path string, data []byte) interface{} {
 		}
 		return &ResultSet{
 			Id: id,
-			Cmd: "putfile",
-			Path: path,
+			// Cmd: "putfile",
+			// Path: path,
 		}
 	}
 
@@ -193,7 +205,8 @@ func PutFile2 (id, path string, data []byte) interface{} {
 
 	return &ResultSet{
 		Id : id,
-		Cmd: "putfile",
-		Path: path,
+		// Cmd: "putfile",
+		// Path: path,
 	};
 };
+*/

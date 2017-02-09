@@ -17,11 +17,11 @@ type Command struct {
 func RunCmd (cmd Command, out io.Writer) {
 	encoder := msgpack.NewEncoder(out);
 	if cmd.Id == "" {
-		encoder.Encode(FailedResultSet("null", cmd.Cmd, "", "No Id supplied."));
+		encoder.Encode(FailedResultSet("", "No Id supplied."));
 		return;
 	}
 	if len(cmd.Args) == 0 {
-		res := FailedResultSet(cmd.Id, cmd.Cmd,"", "Not enough arguments.");
+		res := FailedResultSet(cmd.Id, "Not enough arguments.");
 		WriteOut(encoder, res);
 		return;
 	}
@@ -40,13 +40,13 @@ func RunCmd (cmd Command, out io.Writer) {
 		return;
 
 	case "putfile":
-		res := PutFile2(cmd.Id, cmd.Args[0], cmd.Data);
+		res := PutFile(cmd.Id, cmd.Args[0], cmd.Data);
 		WriteOut(encoder, res);
 		return;
 
 	case "mv":
 		if len(cmd.Args) < 1 {
-			res := FailedResultSet(id, cmd.Cmd,"","Not enough arguments.");
+			res := FailedResultSet(id,"Not enough arguments.");
 			WriteOut(encoder, res);
 			return;
 		}
@@ -55,7 +55,7 @@ func RunCmd (cmd Command, out io.Writer) {
 		return;
 	case "cp":
 		if len(cmd.Args) < 1 {
-			res := FailedResultSet(id, cmd.Cmd,"","Not enough arguments.");
+			res := FailedResultSet(id,"Not enough arguments.");
 			WriteOut(encoder, res);
 			return;
 		}
@@ -75,7 +75,7 @@ func RunCmd (cmd Command, out io.Writer) {
 		return;
 
 	}
-	res := FailedResultSet(id, "","","No command specified.");
+	res := FailedResultSet(id,"No command specified.");
 	WriteOut(encoder, res);
 }
 

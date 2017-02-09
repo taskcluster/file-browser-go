@@ -14,18 +14,14 @@ type FileInfo struct {
 
 type ResultSet struct {
 	Id string `msgpack:"id"`
-	Cmd string `msgpack:"cmd"`
-	Path string `msgpack:"path"`
 	Err string `msgpack:"error"`
 	Files []FileInfo `msgpack:"files"`
 	Data *FileData `msgpack:"fileData"`
 }
 
-func FailedResultSet (cmd, path, id, err string) *ResultSet {
+func FailedResultSet (id, err string) *ResultSet {
 	return &ResultSet{
 		Id: id,
-		Cmd: cmd,
-		Path: path,
 		Err: err,
 	}
 }

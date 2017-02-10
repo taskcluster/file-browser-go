@@ -196,8 +196,7 @@ func TestGetFile (t *testing.T) {
 	err = nil;
 	res := &ResultSet{};
 
-	// This helps to ensure that the pieces are in order
-	var max int64 = -1;
+	// var max int64 = -1;
 
 	// Buffer to hold the data that's been read
 	compBuff := []byte{};
@@ -209,23 +208,16 @@ func TestGetFile (t *testing.T) {
 			break;
 		}
 		t.Log(res);
-		if res.Data.CurrentPiece == 0 {
+		if res.Data.CurrentPiece == res.Data.TotalPieces {
 			t.Logf("Got total pieces %d", res.Data.TotalPieces);
-			max = res.Data.TotalPieces;
-			continue;
 		}
 		for _, b := range res.Data.Data {
 			compBuff = append(compBuff, b);
 		}
-		max--;
 	}
 
 	outputFile.Close();
 
-	if max != 0 {
-		t.Logf("All pieces were not recieved");
-		t.FailNow();
-	}
 	for i, _ := range data {
 		if data[i] != compBuff[i]{
 			t.Logf("Data not same");
@@ -254,11 +246,9 @@ func TestGetFileEmpty(t *testing.T) {
 	of, err = os.OpenFile(op, os.O_RDONLY, 0777);
 	msgpackDec := msgpack.NewDecoder(of);
 
-	var max int64 = -1;
+	// var max int64 = -1;
 	err = nil;
 	res := &ResultSet{};
-
-	tempBuff := []byte{};
 
 	for err != io.EOF {
 		err = msgpackDec.Decode(res);
@@ -266,25 +256,10 @@ func TestGetFileEmpty(t *testing.T) {
 			t.Log(err);
 			break;
 		}
-		if res.Data.CurrentPiece == 0 {
-			t.Logf("Got total pieces %d", res.Data.TotalPieces);
-			max = res.Data.TotalPieces;
-			continue;
+		t.Log(res);
+		if res.Err != "EOF" {
+			t.FailNow();
 		}
-		max--;
-		for _, b := range res.Data.Data {
-			tempBuff = append(tempBuff, b);
-		}
-	}
-
-	if max != 0 {
-		t.Log("All pieces not recieved.");
-		t.FailNow();
-	}
-	// t.Log(tempBuff);
-	if len(tempBuff) != 0 {
-		t.Logf("%d bytes expected.", 0);
-		t.FailNow();
 	}
 }
 
@@ -340,7 +315,7 @@ func TestPutFile (t *testing.T) {
 	os.Remove(newpath);
 	t.Log(newpath);
 
-	// Write data to newpath using PutFile2
+	// Write data to newpath using PutFile
 	var count int = 0;
 	for count < len(data) {
 		w := []byte{};
@@ -351,14 +326,14 @@ func TestPutFile (t *testing.T) {
 			count++;
 		}
 		t.Log("Chunk Length: ", len(w));
-		res := PutFile2("test", newpath, w).(*ResultSet);
+		res := PutFile("test", newpath, w).(*ResultSet);
 		if res.Err != "" {
 			t.FailNow();
 
 			_ = PutFile("test", newpath, []byte{});
 		}
 	}
-	_ = PutFile2("test", newpath, []byte{});
+	_ = PutFile("test", newpath, []byte{});
 	file, err := os.OpenFile(newpath, os.O_RDONLY, 0777);
 	defer os.Remove(newpath);
 	FailNotNil(err, t);
@@ -377,8 +352,8 @@ func TestPutFile (t *testing.T) {
 
 func TestPutFileEmpty(t *testing.T) {
 	newpath := filepath.Join(os.TempDir(), "put_file_empty_test");
-	PutFile2("test", newpath, []byte{});
-	PutFile2("test", newpath, []byte{});
+	PutFile("test", newpath, []byte{});
+	PutFile("test", newpath, []byte{});
 	file, err := os.Open(newpath);
 	FailNotNil(err, t);
 	defer file.Close();
@@ -391,7 +366,7 @@ func TestPutFileEmpty(t *testing.T) {
 
 func TestPutFileNotExists(t *testing.T) {
 	path := "this/path/does/not/exist";
-	res := PutFile2("test", path, []byte{}).(*ResultSet);
+	res := PutFile("test", path, []byte{}).(*ResultSet);
 	if res.Err == "" {
 		t.Log("Error should occur");
 		t.FailNow();

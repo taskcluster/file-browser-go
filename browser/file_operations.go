@@ -77,19 +77,18 @@ func GetFile (id, path string, out io.Writer) {
 	var i int64;
 	defer file.Close();
 	for i=1; i <= maxdiv; i++ {
+		var res *ResultSet = nil;
 		n,err := file.Read(buff);
 
-    if err != nil {
-      WriteOut(encoder, &ResultSet{
-        Id: id,
-        // Cmd: 'getfile',
-        // Path: path,
-        Err: err.Error(),
-      });
-      return;
-    }
+		if err != nil {
+			WriteOut(encoder, &ResultSet{
+				Id: id,
+				Err: err.Error(),
+		      });
+		      return;
+		}
 
-		res := &ResultSet{
+		res = &ResultSet{
 			Id:  id,
 			// Cmd: "getfile",
 			// Path: path,

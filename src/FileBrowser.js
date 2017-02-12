@@ -22,13 +22,10 @@ const lck = key => new Promise(resolve => lock(key, resolve));
 
 class FileBrowser {
   
-  constructor(shell) {
+  constructor(inStream, outStream) {
 
-    assert(shell);
-    assert(shell.stdin);
-    assert(shell.stdout);
-
-    this.shell = shell;   
+    assert(inStream);
+    assert(outStream);
 
     this.stdin = through2.obj(function (chunk, enc, cb) {
       this.push(msp.encode(chunk));
@@ -41,9 +38,9 @@ class FileBrowser {
     this.stdout = msp.createDecodeStream();
     // this.testOut = msp.createDecodeStream();
 
-    this.stdin.pipe(this.shell.stdin);
+    this.stdin.pipe(inStream);
     // this.stdin.pipe(this.testOut);
-    this.shell.stdout.pipe(this.stdout);
+    outStream.pipe(this.stdout);
 
     // this.stdout.setMaxListeners(0);
 
@@ -93,7 +90,6 @@ class FileBrowser {
 
     });
   }
-
   
   _writeAndResolve (cmd) {
     let self = this;
@@ -188,15 +184,10 @@ class FileBrowser {
 
   }
 
-  async kill () {
-    let prom = new Promise((resolve, reject) => {
-      this.shell.on('exit', resolve).on('error', reject);
-    });
+  kill () {
     // this.stdin.destroy();
     this.stdin.end();
     this.stdout.end();
-    this.shell.kill();
-    return prom;
   }
  
   // Wrapper method for putfile
@@ -243,7 +234,6 @@ class FileBrowser {
     return str;
   }
 
- 
 }
 
 module.exports = FileBrowser;

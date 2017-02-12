@@ -20,7 +20,7 @@ describe ('Basic', function(){
     shell = child_process.spawn ('./file-browser-go', [] , {
       stdio: ['pipe', 'pipe', 'ignore']
     });
-    browser = new FileBrowser(shell);
+    browser = new FileBrowser(shell.stdin, shell.stdout);
   });
 
   it('can list contents of a directory', async function() {

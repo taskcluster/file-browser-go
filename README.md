@@ -10,6 +10,15 @@ Currently supports:
 * getfile -> stream file from remote fs to local fs
 * putfile -> stream file from local fs to remote fs
 
+###Creating a browser object:
+* FileBrowser(inStream, outStream);
+
+eg. 
+```javascript
+let shell = child_process.spawn('file-browser-go', ...);
+let browser = new FileBrowser(shell.stdin, shell.stdout);
+```
+
 ###Basic usage
 
 1. ls -> list

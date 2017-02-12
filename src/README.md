@@ -38,3 +38,10 @@ stream.write('string or buffer');
 stream.end();
 await finished;
 ```
+A wrapper function `writeToFile` has been provided.
+* writeToFile(remotePath, data)
+
+###Usage:
+```javascript
+await writeToFile('path', 'string or Buffer');
+```

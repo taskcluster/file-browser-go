@@ -14,9 +14,7 @@ const
   fs        = require('fs');
 
 const
-  Command         = require('./Command.js');
-  // FileOperations  = require('./FileOperations.js');
-  // StringDecoder   = require('string_decoder').StringDecoder;
+  Command   = require('./Command.js');
 
 const CHUNKSIZE = 4072;
 
@@ -73,9 +71,10 @@ class FileBrowser {
 
       self[c] = async (src, dest) => {
         let cmd = Command[c](src, dest);
-        let result = await self.writeAndResolve(cmd);
+        let result = await self._writeAndResolve(cmd);
         debug('Received: ', data);
         delete this._cb[cmd.id];
+        if (data.error != '') throw new Error(data.error);
         return result;
       }
 
@@ -85,9 +84,10 @@ class FileBrowser {
 
       self[c] = async (path) => {
         let cmd = Command[c](path);
-        let result = await self.writeAndResolve(cmd);
+        let result = await self._writeAndResolve(cmd);
         debug('Received: ', data);
         delete this._cb[cmd.id];
+        if (data.error != '') throw new Error(data.error);
         return result;
       }
 
@@ -95,7 +95,7 @@ class FileBrowser {
   }
 
   
-  writeAndResolve (cmd) {
+  _writeAndResolve (cmd) {
     let self = this;
     return new Promise(resolve => {
       self.stdin.write(cmd);
@@ -103,11 +103,17 @@ class FileBrowser {
     });
   }
 
-  putfile (srcStream , dest) {  
+  * _putfile (dest) {  
 
+    if(typeof dest != 'string') {
+      throw new Error('\'dest\' must be of type string.');
+    }
     let self = this;
 
-    return new Promise((resolve, reject) => {
+    let srcStream = through2(function (chunk, enc, cb) { this.push(chunk); cb(); });
+    yield srcStream;
+
+    yield new Promise((resolve, reject) => {
 
       // Lock to guarantee chunks are written in the correct order
       let lk_id = slugid.v4();
@@ -121,6 +127,7 @@ class FileBrowser {
       srcStream.on('data', async data => {
         let unlock = await lck(lk_id);
         let fail = false;
+        let result;
         try{
 
           if (typeof data === 'string') {
@@ -133,7 +140,7 @@ class FileBrowser {
             let ch = Buffer.from(chunks[i]);
             let cmd = Command.putfile(dest, ch);
             // debug(cmd);
-            let result = await self.writeAndResolve(cmd);
+            result = await self._writeAndResolve(cmd);
             // debug(result);
             if (result.error != '') {
               fail = true;
@@ -144,7 +151,7 @@ class FileBrowser {
         }finally{
           unlock();
           if (fail) {
-            reject('Operation failed');
+            reject(new Error(result.error));
           }
         }
       });
@@ -154,23 +161,25 @@ class FileBrowser {
 
   }
 
-  getfile (src , outStream) {
+  * _getfile (src) {
 
     let cmd = Command.getfile(src); 
+    let outStream = through2(function (chunk, enc, cb) { this.push(chunk); cb(); });
     let self = this;
+    
+    yield outStream;
 
-    return new Promise(resolve => {
+    yield new Promise((resolve, reject) => {
       self.stdin.write(cmd);
       self._cb[cmd.id] = (data) => {
-        debug('Getfile :', data);
+        // debug('Getfile :', data);
         if (data.error != '') {
-          return resolve(false);
-        }
-        if (data.fileData.currentPiece == 0) {
-          return;
+          outStream.end();
+          return reject(new Error(data.error));
         }
         outStream.write(data.fileData.data);
         if (data.fileData.totalPieces == data.fileData.currentPiece) {
+          outStream.end();
           delete self._cb[cmd.id];
           return resolve(true);
         }
@@ -189,7 +198,52 @@ class FileBrowser {
     this.shell.kill();
     return prom;
   }
-  
+ 
+  // Wrapper method for putfile
+  async writeToFile (remotePath , data) {
+    if (typeof data !== 'string' && typeof data !== 'Buffer') {
+      throw new Error('\'data\' must be of type string or Buffer');
+    }
+    let gen = this._putfile(remotePath);
+    let stream = gen.next().value;
+    let writer = gen.next().value;
+    stream.write(data);
+    stream.end();
+    return await writer;
+  }
+
+  // Wrapper methods for _getfile
+  async readFileAsString (remotePath, enc = 'utf8') {
+    let gen = this._getfile(remotePath);
+    let stream = gen.next().value;
+    let str = "";
+    stream.on('data', data => {
+      if(typeof data === 'Buffer') {
+        data = data.toString(enc);
+      }
+      str += data;
+    });
+    let reader = gen.next().value;
+    await reader;
+    return str;
+  }
+
+  async readFileAsBuffer (){
+    let gen = this._getfile(remotePath);
+    let stream = gen.next().value;
+    let buff = Buffer.alloc(0); // Initialize a zero length buffer
+    stream.on('data', data => {
+      if(typeof data === 'string') {
+        data = Buffer.from(data);
+      }
+      buff = Buffer.concat([buff, data]);
+    });
+    let reader = gen.next().value();
+    await reader;
+    return str;
+  }
+
+ 
 }
 
 module.exports = FileBrowser;

@@ -1,10 +1,10 @@
-package browser;
+package browser
 
 import (
-	"os";
-	"io";
+	"io"
+	"os"
 	// "io/ioutil";
-	"gopkg.in/vmihailenco/msgpack.v2";
+	"gopkg.in/vmihailenco/msgpack.v2"
 	// "path/filepath";
 )
 
@@ -13,94 +13,95 @@ import (
 const CHUNKSIZE = 2048
 
 /* GetFile
-	GetFile will write the content of files to stdout.
-	GetFile2 initially returns a pointer to a ResultSet:
-	The first result set contains a the path of the file,
-	total number of pieces, and is numbered as piece 0.
-	Use this for assembling the file.
-	&ResultSet {
-		Cmd: "cat",
-		Path: <path of the file>,
-		Data: &FileData{
-			TotalPieces: <Total number of pieces>,
-			CurrentPiece: 0,
-			Data: nil,
-		},
-	}
-
-	The file is then read in chunks of size CHUNKSIZE and
-	written to stdout in msgpack format.
-*/
-
-func GetFileDiv (file *os.File) int64 {
-	finfo, _ := file.Stat();
-	if finfo.Size() == 0 {
-		return 1;
-	}
-	if finfo.Size() % CHUNKSIZE == 0 {
-		return finfo.Size() / CHUNKSIZE;
-	}
-	return finfo.Size() / CHUNKSIZE + 1;
+GetFile will write the content of files to stdout.
+GetFile2 initially returns a pointer to a ResultSet:
+The first result set contains a the path of the file,
+total number of pieces, and is numbered as piece 0.
+Use this for assembling the file.
+&ResultSet {
+	Cmd: "cat",
+	Path: <path of the file>,
+	Data: &FileData{
+		TotalPieces: <Total number of pieces>,
+		CurrentPiece: 0,
+		Data: nil,
+	},
 }
 
-func GetFile (id, path string, out io.Writer) {
-	OpAdd();
-	defer OpDone();
-	encoder := msgpack.NewEncoder(out);
+The file is then read in chunks of size CHUNKSIZE and
+written to stdout in msgpack format.
+*/
+
+func GetFileDiv(file *os.File) int64 {
+	finfo, _ := file.Stat()
+	if finfo.Size() == 0 {
+		return 1
+	}
+	if finfo.Size()%CHUNKSIZE == 0 {
+		return finfo.Size() / CHUNKSIZE
+	}
+	return finfo.Size()/CHUNKSIZE + 1
+}
+
+func GetFile(id, path string, out io.Writer) {
+	OpAdd()
+	defer OpDone()
+	encoder := msgpack.NewEncoder(out)
 	if !ValidateDirPath(&path) || IsDir(path) {
-		res := FailedResultSet(id, "Not a valid path.");
-		WriteOut(encoder, res);
-		return;
+		res := FailedResultSet(id, "Not a valid path.")
+		WriteOut(encoder, res)
+		return
 	}
-	file, err := os.Open(path);
+	file, err := os.Open(path)
 	if err != nil {
-		res := FailedResultSet(id,  err.Error());
-		WriteOut(encoder, res);
-		return;
+		res := FailedResultSet(id, err.Error())
+		WriteOut(encoder, res)
+		return
 	}
-	maxdiv := GetFileDiv(file);
-  /*
-	res := &ResultSet{
-		Id:  id,
-		Cmd: "getfile",
-		Path: path,
-		Data: &FileData{
-			TotalPieces: maxdiv,
-			CurrentPiece: 0,
-			Data: []byte{},
-		},
-	}
-	WriteOut(encoder, res);
-  */
-
-	buff := make([]byte, CHUNKSIZE);
-	var i int64;
-	defer file.Close();
-	for i=1; i <= maxdiv; i++ {
-		var res *ResultSet = nil;
-		n,err := file.Read(buff);
-
-		if err != nil {
-			WriteOut(encoder, &ResultSet{
-				Id: id,
-				Err: err.Error(),
-		      });
-		      return;
-		}
-
-		res = &ResultSet{
+	maxdiv := GetFileDiv(file)
+	/*
+		res := &ResultSet{
 			Id:  id,
-			// Cmd: "getfile",
-			// Path: path,
+			Cmd: "getfile",
+			Path: path,
 			Data: &FileData{
 				TotalPieces: maxdiv,
-				CurrentPiece: i,
-				Data: buff[:n],
+				CurrentPiece: 0,
+				Data: []byte{},
 			},
 		}
 		WriteOut(encoder, res);
+	*/
+
+	buff := make([]byte, CHUNKSIZE)
+	var i int64
+	defer file.Close()
+	for i = 1; i <= maxdiv; i++ {
+		var res *ResultSet = nil
+		n, err := file.Read(buff)
+
+		if err != nil {
+			WriteOut(encoder, &ResultSet{
+				Id:  id,
+				Err: err.Error(),
+			})
+			return
+		}
+
+		res = &ResultSet{
+			Id: id,
+			// Cmd: "getfile",
+			// Path: path,
+			Data: &FileData{
+				TotalPieces:  maxdiv,
+				CurrentPiece: i,
+				Data:         buff[:n],
+			},
+		}
+		WriteOut(encoder, res)
 	}
 }
+
 /*
 PutFile:
 Receive command of the form
@@ -115,33 +116,32 @@ else append bytes to end of file.
 Return resultset
 */
 
-
 func PutFile(id, path string, data []byte) interface{} {
-	OpAdd();
-	defer OpDone();
-	file, err := os.OpenFile(path, os.O_CREATE | os.O_APPEND | os.O_WRONLY, 0666);
+	OpAdd()
+	defer OpDone()
+	file, err := os.OpenFile(path, os.O_CREATE|os.O_APPEND|os.O_WRONLY, 0666)
 	if err != nil {
 		// fmt.Println(err.Error());
-		return FailedResultSet(id, err.Error());
+		return FailedResultSet(id, err.Error())
 	}
-	defer file.Close();
-	_,err = file.Write(data);
+	defer file.Close()
+	_, err = file.Write(data)
 
-  if err != nil {
-		return FailedResultSet(id, err.Error());
-  }
+	if err != nil {
+		return FailedResultSet(id, err.Error())
+	}
 
 	return &ResultSet{
-		Id : id,
+		Id: id,
 		// Cmd: "putfile",
 		// Path: path,
-	};
+	}
 }
 
 /*
 putFile2
 Use instead of PutFile
-params: 
+params:
 	path : string, path where the file is to be written
 	data : []byte, data to be written to the file
 

@@ -1,152 +1,152 @@
-package browser;
+package browser
 
 import (
-	"os";
-	"io";
-	"path/filepath";
-	"container/list";
-	"gopkg.in/vmihailenco/msgpack.v2";
+	"container/list"
+	"gopkg.in/vmihailenco/msgpack.v2"
+	"io"
+	"os"
+	"path/filepath"
 )
 
-func Move (id, oldpath, newpath string) interface{} {
-	OpAdd();
+func Move(id, oldpath, newpath string) interface{} {
+	OpAdd()
 	if IsLocked(oldpath) {
-		return FailedResultSet(id, "Path locked for another operation.");
+		return FailedResultSet(id, "Path locked for another operation.")
 	}
-	LockPath(oldpath);
-	LockPath(newpath);
+	LockPath(oldpath)
+	LockPath(newpath)
 
-	defer func (){
-		UnlockPath(oldpath);
-		UnlockPath(newpath);
-		OpDone();
-	}();
+	defer func() {
+		UnlockPath(oldpath)
+		UnlockPath(newpath)
+		OpDone()
+	}()
 
-	err := os.Rename(oldpath, newpath);
+	err := os.Rename(oldpath, newpath)
 	if err != nil {
-		return FailedResultSet(id, err.Error());
+		return FailedResultSet(id, err.Error())
 	}
 	return &ResultSet{
-		Id : id,
+		Id: id,
 		// Cmd: "mv",
 		// Path: newpath,
 	}
 }
 
-func Remove (id, path string) interface{} {
-	OpAdd();
+func Remove(id, path string) interface{} {
+	OpAdd()
 	if IsLocked(path) {
-		return FailedResultSet(id, "Path locked for another operation.");
+		return FailedResultSet(id, "Path locked for another operation.")
 	}
-	LockPath(path);
+	LockPath(path)
 	defer func() {
-		UnlockPath(path);
-		OpDone();
-	}();
-	err := os.RemoveAll(path);
+		UnlockPath(path)
+		OpDone()
+	}()
+	err := os.RemoveAll(path)
 	if err != nil {
-		return FailedResultSet(id, err.Error());
+		return FailedResultSet(id, err.Error())
 	}
 	return &ResultSet{
-		Id : id,
+		Id: id,
 		// Cmd: "rm",
 		// Path: path,
-	};
+	}
 }
 
 // Function for copying file/dirs
 
-func Copy (id, oldpath, newpath string, out io.Writer) interface{} {
-	file, err := os.Open(oldpath);
+func Copy(id, oldpath, newpath string, out io.Writer) interface{} {
+	file, err := os.Open(oldpath)
 	if err != nil {
-		return FailedResultSet(id, err.Error());
+		return FailedResultSet(id, err.Error())
 	}
-	file.Close();
+	file.Close()
 
-	finfo, err := os.Stat(newpath);
+	finfo, err := os.Stat(newpath)
 	if err != nil || !finfo.IsDir() {
-		return FailedResultSet(id, "Destination not valid.");
+		return FailedResultSet(id, "Destination not valid.")
 	}
 
 	// Append the filename to the new path
-	_, f := filepath.Split(oldpath);
-	newpath = filepath.Join(newpath,f);
+	_, f := filepath.Split(oldpath)
+	newpath = filepath.Join(newpath, f)
 
 	// Add to the wait group before the go routine
 	// to avoid a race condition
-	OpAdd();
+	OpAdd()
 	// BFS Copying method
-	go func (id, oldpath, newpath string) {
+	go func(id, oldpath, newpath string) {
 		// Release the lock after the goroutine completes
-		defer OpDone();
+		defer OpDone()
 
-		enc := msgpack.NewEncoder(out);
-		queue := list.New();
-		lockedPaths := make([]string,0);
-		queue.PushBack(oldpath);
-		errStr := "";
+		enc := msgpack.NewEncoder(out)
+		queue := list.New()
+		lockedPaths := make([]string, 0)
+		queue.PushBack(oldpath)
+		errStr := ""
 
 		for queue.Len() > 0 {
-			path := queue.Front().Value.(string);
-			queue.Remove(queue.Front());
+			path := queue.Front().Value.(string)
+			queue.Remove(queue.Front())
 
-			file, err := os.Open(path);
+			file, err := os.Open(path)
 			if err != nil {
-				errStr += err.Error() + "\n";
-				continue;
+				errStr += err.Error() + "\n"
+				continue
 			}
-			lockedPaths = append(lockedPaths, path);
-			LockPath(path);
-			finfo, err := file.Stat();
+			lockedPaths = append(lockedPaths, path)
+			LockPath(path)
+			finfo, err := file.Stat()
 			if err != nil {
-				errStr += err.Error() + "\n";
-				continue;
+				errStr += err.Error() + "\n"
+				continue
 			}
 			npath := newpath + path[len(oldpath):]
 			if finfo.IsDir() {
-				err = os.Mkdir(npath, finfo.Mode().Perm());
+				err = os.Mkdir(npath, finfo.Mode().Perm())
 				if err != nil {
-					errStr += err.Error() + "\n";
-					continue;
+					errStr += err.Error() + "\n"
+					continue
 				}
-				sub, err := file.Readdirnames(-1);
+				sub, err := file.Readdirnames(-1)
 				if err != nil {
-					errStr += err.Error() + "\n";
-					continue;
+					errStr += err.Error() + "\n"
+					continue
 				}
 				for _, name := range sub {
-					queue.PushBack(filepath.Join(path,name));
+					queue.PushBack(filepath.Join(path, name))
 				}
-			}else{
-				nfile, err := os.OpenFile(npath, os.O_CREATE | os.O_WRONLY, 0777);
+			} else {
+				nfile, err := os.OpenFile(npath, os.O_CREATE|os.O_WRONLY, 0777)
 				if err != nil {
-					errStr += err.Error() + "\n";
-					continue;
+					errStr += err.Error() + "\n"
+					continue
 				}
-				_, err = io.Copy(nfile,file);
+				_, err = io.Copy(nfile, file)
 				if err != nil {
-					errStr += err.Error() + "\n";
-					continue;
+					errStr += err.Error() + "\n"
+					continue
 				}
-				_ = nfile.Chmod(finfo.Mode());
-				nfile.Close();
+				_ = nfile.Chmod(finfo.Mode())
+				nfile.Close()
 			}
-			file.Close();
+			file.Close()
 		}
 		for _, p := range lockedPaths {
-			UnlockPath(p);
+			UnlockPath(p)
 		}
 
 		res := &ResultSet{
-			Id : id,
+			Id: id,
 			// Cmd: "cp",
 			// Path: newpath,
 			Err: errStr,
 		}
-		WriteOut(enc, res);
+		WriteOut(enc, res)
 
-	}(id, oldpath, newpath);
+	}(id, oldpath, newpath)
 
-	return nil;
+	return nil
 
 }

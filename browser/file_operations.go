@@ -36,15 +36,15 @@ func GetFile(id string, out chan interface{}, path string) {
 	defer OpDone()
 	if !ValidateDirPath(&path) || IsDir(path) {
 		res := FailedResultSet(id, "Not a valid path.")
-		out <- res;
-		out <- nil;
+		out <- res
+		out <- nil
 		return
 	}
 	file, err := os.Open(path)
 	if err != nil {
 		res := FailedResultSet(id, err.Error())
-		out <- res;
-		out <- nil;
+		out <- res
+		out <- nil
 		return
 	}
 	maxdiv := GetFileDiv(file)
@@ -61,7 +61,7 @@ func GetFile(id string, out chan interface{}, path string) {
 				Id:  id,
 				Err: err.Error(),
 			}
-			break;
+			break
 		}
 
 		res = &ResultSet{
@@ -72,7 +72,7 @@ func GetFile(id string, out chan interface{}, path string) {
 				Data:         buff[:n],
 			},
 		}
-		out <- res;
+		out <- res
 	}
 }
 

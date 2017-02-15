@@ -34,7 +34,7 @@ func RunCmd(cmd Command, outChan chan interface{}) {
 		return
 
 	case "getfile":
-		GetFile(cmd.Id, outChan, cmd.Args[0]);
+		GetFile(cmd.Id, outChan, cmd.Args[0])
 		return
 
 	case "putfile":
@@ -76,7 +76,7 @@ func Run(in *os.File, out *os.File) {
 	outChan := make(chan interface{})
 	go func() {
 		for {
-			encoder.Encode(<-outChan);
+			encoder.Encode(<-outChan)
 		}
 	}()
 	for {

@@ -12,7 +12,7 @@ import (
 
 var outChan chan interface{}
 
-func TestMain (m *testing.M) {
+func TestMain(m *testing.M) {
 	outChan = make(chan interface{})
 	os.Exit(m.Run())
 }
@@ -111,7 +111,7 @@ func TestCopy(t *testing.T) {
 		_ = os.Remove(d2)
 	}()
 
-	go Copy("test",outChan, d1, d2)
+	go Copy("test", outChan, d1, d2)
 	<-outChan
 	WaitForOperationsToComplete()
 
@@ -122,7 +122,7 @@ func TestCopy(t *testing.T) {
 }
 
 func TestCopySrcNotExist(t *testing.T) {
-	go Copy("test",outChan, "does/not/exist", os.TempDir())
+	go Copy("test", outChan, "does/not/exist", os.TempDir())
 	res := (<-outChan).(*ResultSet)
 	if res.Err == "" {
 		t.Log("Error should occur.")
@@ -146,9 +146,9 @@ func TestCopyDestNotExist(t *testing.T) {
 
 func TestGetFile(t *testing.T) {
 
-	var temp,fp string
+	var temp, fp string
 	var tf *os.File
-	outChan := make(chan interface{});
+	outChan := make(chan interface{})
 
 	defer func() {
 		_ = os.Remove(temp)
@@ -197,10 +197,10 @@ func TestGetFile(t *testing.T) {
 	for {
 		res := (<-outChan).(*ResultSet)
 		if res.Err != "" {
-			t.FailNow();
+			t.FailNow()
 		}
 		for _, b := range res.Data.Data {
-			compBuff = append(compBuff, b);
+			compBuff = append(compBuff, b)
 		}
 		if res.Data.TotalPieces == res.Data.CurrentPiece {
 			break
@@ -230,7 +230,7 @@ func TestGetFileEmpty(t *testing.T) {
 	res = (<-outChan).(*ResultSet)
 	WaitForOperationsToComplete()
 	if len(res.Data.Data) != 0 {
-		t.FailNow();
+		t.FailNow()
 	}
 
 }
@@ -243,7 +243,7 @@ func TestGetFileNotExist(t *testing.T) {
 	res = (<-outChan).(*ResultSet)
 	WaitForOperationsToComplete()
 	if res.Err == "" {
-		t.Log ("Should fail with an error");
+		t.Log("Should fail with an error")
 		t.FailNow()
 	}
 	t.Log("Error: ", res.Err)

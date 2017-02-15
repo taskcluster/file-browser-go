@@ -138,7 +138,7 @@ func Copy(id string, outChan chan interface{}, oldpath, newpath string) {
 		}
 
 		res := &ResultSet{
-			Id: id,
+			Id:  id,
 			Err: errStr,
 		}
 		outChan <- res

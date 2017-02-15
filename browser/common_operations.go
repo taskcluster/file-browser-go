@@ -2,16 +2,16 @@ package browser
 
 import (
 	"container/list"
-	"gopkg.in/vmihailenco/msgpack.v2"
 	"io"
 	"os"
 	"path/filepath"
 )
 
-func Move(id, oldpath, newpath string) interface{} {
+func Move(id string, outChan chan interface{}, oldpath, newpath string) {
 	OpAdd()
 	if IsLocked(oldpath) {
-		return FailedResultSet(id, "Path locked for another operation.")
+		outChan <- FailedResultSet(id, "Path locked for another operation.")
+		return
 	}
 	LockPath(oldpath)
 	LockPath(newpath)
@@ -24,19 +24,19 @@ func Move(id, oldpath, newpath string) interface{} {
 
 	err := os.Rename(oldpath, newpath)
 	if err != nil {
-		return FailedResultSet(id, err.Error())
+		outChan <- FailedResultSet(id, err.Error())
+		return
 	}
-	return &ResultSet{
+	outChan <- &ResultSet{
 		Id: id,
-		// Cmd: "mv",
-		// Path: newpath,
 	}
 }
 
-func Remove(id, path string) interface{} {
+func Remove(id string, outChan chan interface{}, path string) {
 	OpAdd()
 	if IsLocked(path) {
-		return FailedResultSet(id, "Path locked for another operation.")
+		outChan <- FailedResultSet(id, "Path locked for another operation.")
+		return
 	}
 	LockPath(path)
 	defer func() {
@@ -45,27 +45,28 @@ func Remove(id, path string) interface{} {
 	}()
 	err := os.RemoveAll(path)
 	if err != nil {
-		return FailedResultSet(id, err.Error())
+		outChan <- FailedResultSet(id, err.Error())
+		return
 	}
-	return &ResultSet{
+	outChan <- &ResultSet{
 		Id: id,
-		// Cmd: "rm",
-		// Path: path,
 	}
 }
 
 // Function for copying file/dirs
 
-func Copy(id, oldpath, newpath string, out io.Writer) interface{} {
+func Copy(id string, outChan chan interface{}, oldpath, newpath string) {
 	file, err := os.Open(oldpath)
 	if err != nil {
-		return FailedResultSet(id, err.Error())
+		outChan <- FailedResultSet(id, err.Error())
+		return
 	}
 	file.Close()
 
 	finfo, err := os.Stat(newpath)
 	if err != nil || !finfo.IsDir() {
-		return FailedResultSet(id, "Destination not valid.")
+		outChan <- FailedResultSet(id, "Destination not valid.")
+		return
 	}
 
 	// Append the filename to the new path
@@ -80,7 +81,6 @@ func Copy(id, oldpath, newpath string, out io.Writer) interface{} {
 		// Release the lock after the goroutine completes
 		defer OpDone()
 
-		enc := msgpack.NewEncoder(out)
 		queue := list.New()
 		lockedPaths := make([]string, 0)
 		queue.PushBack(oldpath)
@@ -139,14 +139,9 @@ func Copy(id, oldpath, newpath string, out io.Writer) interface{} {
 
 		res := &ResultSet{
 			Id: id,
-			// Cmd: "cp",
-			// Path: newpath,
 			Err: errStr,
 		}
-		WriteOut(enc, res)
+		outChan <- res
 
 	}(id, oldpath, newpath)
-
-	return nil
-
 }

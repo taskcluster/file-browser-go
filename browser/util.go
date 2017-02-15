@@ -1,22 +1,10 @@
 package browser
 
 import (
-	"gopkg.in/vmihailenco/msgpack.v2"
 	"os"
 	"path/filepath"
 	"sync"
 )
-
-// Check to make sure msgpack output does not get
-// interleaved
-
-var outLock sync.Mutex
-
-func WriteOut(encoder *msgpack.Encoder, res interface{}) {
-	outLock.Lock()
-	encoder.Encode(res)
-	outLock.Unlock()
-}
 
 // Locking paths to make sure there's no interference
 

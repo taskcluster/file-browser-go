@@ -5,15 +5,17 @@ import (
 	"os"
 )
 
-func List(id, path string) interface{} {
+func List(id string, outChan chan interface{}, path string) {
 	OpAdd()
 	defer OpDone()
 	if !ValidateDirPath(&path) || !IsDir(path) {
-		return FailedResultSet(id, "Not a directory.")
+		outChan <- FailedResultSet(id, "Not a directory.")
+		return
 	}
 	finfo, err := ioutil.ReadDir(path)
 	if err != nil {
-		return FailedResultSet(id, err.Error())
+		outChan <- FailedResultSet(id, err.Error())
+		return
 	}
 	files := []FileInfo{}
 	for _, f := range finfo {
@@ -23,7 +25,7 @@ func List(id, path string) interface{} {
 			Dir:  f.IsDir(),
 		})
 	}
-	return &ResultSet{
+	outChan <- &ResultSet{
 		Id: id,
 		// Cmd: "ls",
 		// Path: path,
@@ -31,19 +33,19 @@ func List(id, path string) interface{} {
 	}
 }
 
-func MakeDirectory(id, path string) interface{} {
+func MakeDirectory(id string, outChan chan interface{}, path string) {
 	OpAdd()
 	defer OpDone()
 	if !ValidateDirPath(&path) {
-		return FailedResultSet(id, "Not a valid path.")
+		outChan <- FailedResultSet(id, "Not a valid path.")
+		return
 	}
 	err := os.Mkdir(path, 0777)
 	if err != nil {
-		return FailedResultSet(id, err.Error())
+		outChan <- FailedResultSet(id, err.Error())
+		return
 	}
-	return &ResultSet{
+	outChan <- &ResultSet{
 		Id: id,
-		// Cmd: "mkdir",
-		// Path: path,
 	}
 }

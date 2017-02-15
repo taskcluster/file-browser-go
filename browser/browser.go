@@ -14,15 +14,14 @@ type Command struct {
 	Data []byte   `msgpack:"data"`
 }
 
-func RunCmd(cmd Command, out io.Writer) {
-	encoder := msgpack.NewEncoder(out)
+func RunCmd(cmd Command, outChan chan interface{}) {
 	if cmd.Id == "" {
-		encoder.Encode(FailedResultSet("", "No Id supplied."))
+		outChan <- FailedResultSet("", "No Id supplied.")
 		return
 	}
 	if len(cmd.Args) == 0 {
 		res := FailedResultSet(cmd.Id, "Not enough arguments.")
-		WriteOut(encoder, res)
+		outChan <- res
 		return
 	}
 
@@ -31,65 +30,62 @@ func RunCmd(cmd Command, out io.Writer) {
 	switch cmd.Cmd {
 
 	case "ls":
-		res := List(cmd.Id, cmd.Args[0])
-		WriteOut(encoder, res)
+		List(cmd.Id, outChan, cmd.Args[0])
 		return
 
 	case "getfile":
-		GetFile(cmd.Id, cmd.Args[0], out)
+		GetFile(cmd.Id, outChan, cmd.Args[0]);
 		return
 
 	case "putfile":
-		res := PutFile(cmd.Id, cmd.Args[0], cmd.Data)
-		WriteOut(encoder, res)
+		PutFile(cmd.Id, outChan, cmd.Args[0], cmd.Data)
 		return
 
 	case "mv":
 		if len(cmd.Args) < 1 {
-			res := FailedResultSet(id, "Not enough arguments.")
-			WriteOut(encoder, res)
+			outChan <- FailedResultSet(id, "Not enough arguments.")
 			return
 		}
-		res := Move(cmd.Id, cmd.Args[0], cmd.Args[1])
-		WriteOut(encoder, res)
+		Move(cmd.Id, outChan, cmd.Args[0], cmd.Args[1])
 		return
 	case "cp":
 		if len(cmd.Args) < 1 {
-			res := FailedResultSet(id, "Not enough arguments.")
-			WriteOut(encoder, res)
+			outChan <- FailedResultSet(id, "Not enough arguments.")
 			return
 		}
-		res := Copy(cmd.Id, cmd.Args[0], cmd.Args[1], out)
-		if res != nil {
-			WriteOut(encoder, res)
-		}
+		Copy(cmd.Id, outChan, cmd.Args[0], cmd.Args[1])
 		return
 	case "rm":
-		res := Remove(cmd.Id, cmd.Args[0])
-		WriteOut(encoder, res)
+		Remove(cmd.Id, outChan, cmd.Args[0])
 		return
 
 	case "mkdir":
-		res := MakeDirectory(cmd.Id, cmd.Args[0])
-		WriteOut(encoder, res)
+		MakeDirectory(cmd.Id, outChan, cmd.Args[0])
 		return
 
 	}
 	res := FailedResultSet(id, "No command specified.")
-	WriteOut(encoder, res)
+	outChan <- res
 }
 
 func Run(in *os.File, out *os.File) {
 	decoder := msgpack.NewDecoder(in)
+	encoder := msgpack.NewEncoder(out)
 	var cmd Command
 	var err error = nil
+	outChan := make(chan interface{})
+	go func() {
+		for {
+			encoder.Encode(<-outChan);
+		}
+	}()
 	for {
 		err = decoder.Decode(&cmd)
 		if err != nil {
 			fmt.Print(err.Error())
 			break
 		}
-		RunCmd(cmd, out)
+		go RunCmd(cmd, outChan)
 	}
 	if err == io.EOF {
 		return

@@ -3,10 +3,10 @@ package main
 import (
 	"./browser"
 	"os"
-  // "fmt"
+	// "fmt"
 )
 
 func main() {
 	browser.Run(os.Stdin, os.Stdout)
-  // fmt.Print("Exit");
+	// fmt.Print("Exit");
 }

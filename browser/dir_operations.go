@@ -1,49 +1,51 @@
-package browser;
+package browser
 
 import (
-	"io/ioutil";
-	"os";
+	"io/ioutil"
+	"os"
 )
 
-func List(id, path string) interface{} {
-	OpAdd();
-	defer OpDone();
-	if !ValidateDirPath(&path)|| !IsDir(path) {
-		return FailedResultSet(id, "Not a directory.");
+func List(id string, outChan chan interface{}, path string) {
+	OpAdd()
+	defer OpDone()
+	if !ValidateDirPath(&path) || !IsDir(path) {
+		outChan <- FailedResultSet(id, "Not a directory.")
+		return
 	}
-	finfo, err := ioutil.ReadDir(path);
+	finfo, err := ioutil.ReadDir(path)
 	if err != nil {
-		return FailedResultSet(id, err.Error());
+		outChan <- FailedResultSet(id, err.Error())
+		return
 	}
-	files := []FileInfo{};
+	files := []FileInfo{}
 	for _, f := range finfo {
 		files = append(files, FileInfo{
 			Name: f.Name(),
 			Size: f.Size(),
-			Dir: f.IsDir(),
-		});
+			Dir:  f.IsDir(),
+		})
 	}
-	return &ResultSet{
-		Id : id,
+	outChan <- &ResultSet{
+		Id: id,
 		// Cmd: "ls",
 		// Path: path,
 		Files: files,
 	}
 }
 
-func MakeDirectory (id, path string) interface{} {
-	OpAdd();
-	defer OpDone();
+func MakeDirectory(id string, outChan chan interface{}, path string) {
+	OpAdd()
+	defer OpDone()
 	if !ValidateDirPath(&path) {
-		return FailedResultSet(id, "Not a valid path.");
+		outChan <- FailedResultSet(id, "Not a valid path.")
+		return
 	}
-	err := os.Mkdir(path, 0777);
+	err := os.Mkdir(path, 0777)
 	if err != nil {
-		return FailedResultSet(id, err.Error());
+		outChan <- FailedResultSet(id, err.Error())
+		return
 	}
-	return &ResultSet{
-		Id : id,
-		// Cmd: "mkdir",
-		// Path: path,
+	outChan <- &ResultSet{
+		Id: id,
 	}
 }

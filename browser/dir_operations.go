@@ -5,7 +5,7 @@ import (
 	"os"
 )
 
-func List(id string, outChan chan interface{}, path string) {
+func List(id string, outChan chan *ResultSet, path string) {
 	OpAdd()
 	defer OpDone()
 	if !ValidateDirPath(&path) || !IsDir(path) {
@@ -26,14 +26,12 @@ func List(id string, outChan chan interface{}, path string) {
 		})
 	}
 	outChan <- &ResultSet{
-		Id: id,
-		// Cmd: "ls",
-		// Path: path,
+		Id:    id,
 		Files: files,
 	}
 }
 
-func MakeDirectory(id string, outChan chan interface{}, path string) {
+func MakeDirectory(id string, outChan chan *ResultSet, path string) {
 	OpAdd()
 	defer OpDone()
 	if !ValidateDirPath(&path) {

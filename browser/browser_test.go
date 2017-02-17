@@ -1,8 +1,6 @@
 package browser
 
 import (
-	// "gopkg.in/vmihailenco/msgpack.v2"
-	// "io"
 	"io/ioutil"
 	"math/rand"
 	"os"
@@ -10,25 +8,26 @@ import (
 	"testing"
 )
 
-var outChan chan interface{}
+var outChan chan *ResultSet
+var dummyChan chan *ResultSet
 
 func TestMain(m *testing.M) {
-	outChan = make(chan interface{})
+	outChan = make(chan *ResultSet)
+	dummyChan = make(chan *ResultSet, 10)
 	os.Exit(m.Run())
 }
 
 func TestList(t *testing.T) {
-	var res *ResultSet = nil
 	temp, err := ioutil.TempDir("", "list")
 	FailNotNil(err, t)
-	defer os.Remove(temp)
+	defer os.RemoveAll(temp)
 	// Make two directories in temp
 	err = os.Mkdir(filepath.Join(temp, "a"), 0777)
 	FailNotNil(err, t)
 	err = os.Mkdir(filepath.Join(temp, "b"), 0777)
 	FailNotNil(err, t)
 	go List("test", outChan, temp)
-	res = (<-outChan).(*ResultSet)
+	res := (<-outChan)
 	if res.Err != "" {
 		t.Fail()
 	}
@@ -40,12 +39,11 @@ func TestList(t *testing.T) {
 func TestListNotExist(t *testing.T) {
 	var res *ResultSet = nil
 	go List("test", outChan, "does/not/exist")
-	res = (<-outChan).(*ResultSet)
+	res = (<-outChan)
 	if res.Err == "" {
 		t.Log("Error should occur.")
 		t.Fail()
 	}
-	t.Log("Error: ", res.Err)
 }
 
 func TestMakeDirectoryAndRemove(t *testing.T) {
@@ -55,37 +53,31 @@ func TestMakeDirectoryAndRemove(t *testing.T) {
 	var res *ResultSet = nil
 
 	defer func() {
-		go Remove("test", outChan, filepath.Join(home, paths[0]))
-		res = (<-outChan).(*ResultSet)
+		Remove("test", dummyChan, filepath.Join(home, paths[0]))
 	}()
 
 	for _, p := range paths {
 		go MakeDirectory("test", outChan, filepath.Join(home, p))
-		res = (<-outChan).(*ResultSet)
+		res = (<-outChan)
 		if res.Err != "" {
-			t.Log(res.Err)
-			t.Fail()
+			t.Fatal(res.Err)
 		}
 		if !Exists(filepath.Join(home, p)) {
-			t.Log("Directory not created")
+			t.Fatal("Directory not created")
 			t.Fail()
 		}
 	}
 }
 
 func TestMakeDirectoryBadPath(t *testing.T) {
-	var res *ResultSet = nil
-	go func() { res = (<-outChan).(*ResultSet) }()
-	MakeDirectory("test", outChan, "does/not/exist")
+	go MakeDirectory("test", outChan, "does/not/exist")
+	res := <-outChan
 	if res.Err == "" {
-		t.Log("Error should occur.")
-		t.FailNow()
+		t.Fatal("Error should occur.")
 	}
-	t.Log("Error: ", res.Err)
 }
 
 func TestCopy(t *testing.T) {
-
 	home, err := ioutil.TempDir("", "copy")
 	FailNotNil(err, t)
 
@@ -95,40 +87,31 @@ func TestCopy(t *testing.T) {
 
 	// Create a directory for copying
 	for _, p := range dir {
-		go MakeDirectory("test", outChan, filepath.Join(home, p))
-		res := (<-outChan).(*ResultSet)
-		if err := res.Err; err != "" {
-			t.Log(err)
-			t.FailNow()
-		}
+		MakeDirectory("test", dummyChan, filepath.Join(home, p))
 	}
 
 	d1 := filepath.Join(home, "copy_folder")
 	d2 := filepath.Join(home, "copy_to/")
 
 	defer func() {
-		_ = os.Remove(d1)
-		_ = os.Remove(d2)
+		_ = os.RemoveAll(d1)
+		_ = os.RemoveAll(d2)
 	}()
 
-	go Copy("test", outChan, d1, d2)
-	<-outChan
+	Copy("test", dummyChan, d1, d2)
 	WaitForOperationsToComplete()
 
 	if CompareDirectory(d1, filepath.Join(d2, "copy_folder")) == false {
-		t.Logf("Directories not similar.")
-		t.Fail()
+		t.Fatal("Directories not similar.")
 	}
 }
 
 func TestCopySrcNotExist(t *testing.T) {
 	go Copy("test", outChan, "does/not/exist", os.TempDir())
-	res := (<-outChan).(*ResultSet)
+	res := (<-outChan)
 	if res.Err == "" {
-		t.Log("Error should occur.")
-		t.FailNow()
+		t.Fatal(res.Err)
 	}
-	t.Log("Error: ", res.Err)
 }
 
 func TestCopyDestNotExist(t *testing.T) {
@@ -136,32 +119,29 @@ func TestCopyDestNotExist(t *testing.T) {
 	FailNotNil(err, t)
 	f.Close()
 	go Copy("test", outChan, f.Name(), "does/not/exist")
-	res := (<-outChan).(*ResultSet)
+	res := (<-outChan)
 	if res.Err == "" {
-		t.Log("Error should occur.")
-		t.FailNow()
+		t.Fatal(res.Err)
 	}
-	t.Log("Error: ", res.Err)
 }
 
 func TestGetFile(t *testing.T) {
 
-	var temp, fp string
-	var tf *os.File
-	outChan := make(chan interface{})
+	temp, err := ioutil.TempDir("", "GetFile")
+	FailNotNil(err, t)
+	tf, err := ioutil.TempFile(temp, "getfile")
+	FailNotNil(err, t)
+
+	// File paths
+	fp := tf.Name()
 
 	defer func() {
-		_ = os.Remove(temp)
+		_ = os.RemoveAll(temp)
 		if tf != nil {
 			_ = tf.Close()
 		}
-		_ = os.Remove(fp)
+		_ = os.RemoveAll(fp)
 	}()
-
-	temp, err := ioutil.TempDir("", "GetFile")
-	FailNotNil(err, t)
-	tf, err = ioutil.TempFile(temp, "getfile")
-	FailNotNil(err, t)
 
 	data := []byte{}
 	compBuff := []byte{}
@@ -170,22 +150,10 @@ func TestGetFile(t *testing.T) {
 	size := 3000
 	for i := 0; i < int(size); i++ {
 		num := gen.Int31()
-
-		b := []byte{0, 0, 0, 0}
-		var k int64 = 3
-		for k >= 0 {
-			b[k] = byte(num & 0xff)
-			k--
-			num = num >> 8
-		}
-
-		for _, j := range b {
-			data = append(data, j)
+		for j := 0; j < 4; j++ {
+			data = append(data, byte(num<<uint(j)*8))
 		}
 	}
-
-	// File paths
-	fp = tf.Name()
 
 	// Write data to temp file and close
 	_, err = tf.Write(data)
@@ -195,13 +163,11 @@ func TestGetFile(t *testing.T) {
 	// Get the file and write output to outputFile
 	go GetFile("test", outChan, fp)
 	for {
-		res := (<-outChan).(*ResultSet)
+		res := (<-outChan)
 		if res.Err != "" {
 			t.FailNow()
 		}
-		for _, b := range res.Data.Data {
-			compBuff = append(compBuff, b)
-		}
+		compBuff = append(compBuff, res.Data.Data...)
 		if res.Data.TotalPieces == res.Data.CurrentPiece {
 			break
 		}
@@ -214,11 +180,8 @@ func TestGetFile(t *testing.T) {
 }
 
 func TestGetFileEmpty(t *testing.T) {
-	var tf *os.File
-	var err error
-	var res *ResultSet
 
-	tf, err = ioutil.TempFile("", "getfile")
+	tf, err := ioutil.TempFile("", "getfile")
 	FailNotNil(err, t)
 
 	_, _ = tf.Write([]byte{})
@@ -227,7 +190,7 @@ func TestGetFileEmpty(t *testing.T) {
 	tp := tf.Name()
 
 	go GetFile("test", outChan, tp)
-	res = (<-outChan).(*ResultSet)
+	res := (<-outChan)
 	WaitForOperationsToComplete()
 	if len(res.Data.Data) != 0 {
 		t.FailNow()
@@ -236,64 +199,44 @@ func TestGetFileEmpty(t *testing.T) {
 }
 
 func TestGetFileNotExist(t *testing.T) {
-	t.Skip()
 	path := "/this/is/not/a/valid/path"
-	var res *ResultSet
 	go GetFile("test", outChan, path)
-	res = (<-outChan).(*ResultSet)
+	res := <-outChan
 	WaitForOperationsToComplete()
 	if res.Err == "" {
-		t.Log("Should fail with an error")
-		t.FailNow()
+		t.Fatal("Error should occur")
 	}
-	t.Log("Error: ", res.Err)
 }
 
 func TestPutFile(t *testing.T) {
 	data := []byte{}
 
 	gen := rand.New(rand.NewSource(1))
-	t.Log("Generating bytes: ")
 	size := 3000
 	for i := 0; i < int(size); i++ {
 		num := gen.Int31()
 
-		b := []byte{0, 0, 0, 0}
-		var k int64 = 3
-		for k >= 0 {
-			b[k] = byte(num & 0xff)
-			k--
-			num = num >> 8
-		}
-
-		for _, j := range b {
-			data = append(data, j)
+		for j := 0; j < 4; j++ {
+			data = append(data, byte(num<<uint(j)*8))
 		}
 	}
-	t.Log("Bytes generated: ")
 
 	f, err := ioutil.TempFile("", "put_file_test")
 	FailNotNil(err, t)
 	newpath := f.Name()
 	os.Remove(newpath)
-	t.Log(newpath)
 
 	// Write data to newpath using PutFile
 	var res *ResultSet
 	var count int = 0
 	for count < len(data) {
-		w := []byte{}
-		i := 0
-		for i < CHUNKSIZE && count < len(data) {
-			w = append(w, data[count])
-			i++
-			count++
-		}
-		t.Log("Chunk Length: ", len(w))
+		i := Min(CHUNKSIZE, len(data)-count)
+		w := data[count : count+i]
+		count += i
 		go PutFile("test", outChan, newpath, w)
-		res = (<-outChan).(*ResultSet)
+		res = (<-outChan)
 		if res.Err != "" {
-			t.FailNow()
+			t.Fatal(res.Err)
 		}
 	}
 	file, err := os.OpenFile(newpath, os.O_RDONLY, 0777)
@@ -302,8 +245,6 @@ func TestPutFile(t *testing.T) {
 	defer file.Close()
 	dataCopy, err := ioutil.ReadAll(file)
 	FailNotNil(err, t)
-	// t.Log(dataCopy);
-	t.Log(len(dataCopy), len(data))
 
 	for i := range data {
 		if data[i] != dataCopy[i] {
@@ -315,9 +256,9 @@ func TestPutFile(t *testing.T) {
 func TestPutFileEmpty(t *testing.T) {
 	newpath := filepath.Join(os.TempDir(), "put_file_empty_test")
 	go PutFile("test", outChan, newpath, []byte{})
-	_ = (<-outChan).(*ResultSet)
+	_ = (<-outChan)
 	go PutFile("test", outChan, newpath, []byte{})
-	_ = (<-outChan).(*ResultSet)
+	_ = (<-outChan)
 	file, err := os.Open(newpath)
 	FailNotNil(err, t)
 	defer file.Close()
@@ -331,10 +272,8 @@ func TestPutFileEmpty(t *testing.T) {
 func TestPutFileBadPath(t *testing.T) {
 	path := "this/path/does/not/exist"
 	go PutFile("test", outChan, path, []byte{})
-	res := (<-outChan).(*ResultSet)
+	res := (<-outChan)
 	if res.Err == "" {
-		t.Log("Error should occur")
-		t.FailNow()
+		t.Fatal("Should fail")
 	}
-	t.Log("Error: ", res.Err)
 }

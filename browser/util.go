@@ -8,17 +8,25 @@ import (
 
 // Locking paths to make sure there's no interference
 
+var pathLock sync.Mutex
+
 var isLocked map[string]bool = make(map[string]bool)
 
 func LockPath(path string) {
+	pathLock.Lock()
 	isLocked[path] = true
+	pathLock.Unlock()
 }
 
 func UnlockPath(path string) {
+	pathLock.Lock()
 	isLocked[path] = false
+	pathLock.Unlock()
 }
 
 func IsLocked(path string) bool {
+	pathLock.Lock()
+	defer pathLock.Unlock()
 	if isLocked[path] {
 		return true
 	}

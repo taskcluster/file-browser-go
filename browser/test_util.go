@@ -12,6 +12,13 @@ type Pair struct {
 	First, Second string
 }
 
+func Min(a, b int) int {
+	if a < b {
+		return a
+	}
+	return b
+}
+
 func CompareDirectory(root1, root2 string) bool {
 	q := list.New()
 	q.PushBack(Pair{root1, root2})

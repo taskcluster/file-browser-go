@@ -7,7 +7,7 @@ import (
 	"path/filepath"
 )
 
-func Move(id string, outChan chan interface{}, oldpath, newpath string) {
+func Move(id string, outChan chan *ResultSet, oldpath, newpath string) {
 	OpAdd()
 	if IsLocked(oldpath) {
 		outChan <- FailedResultSet(id, "Path locked for another operation.")
@@ -32,7 +32,7 @@ func Move(id string, outChan chan interface{}, oldpath, newpath string) {
 	}
 }
 
-func Remove(id string, outChan chan interface{}, path string) {
+func Remove(id string, outChan chan *ResultSet, path string) {
 	OpAdd()
 	if IsLocked(path) {
 		outChan <- FailedResultSet(id, "Path locked for another operation.")
@@ -55,7 +55,7 @@ func Remove(id string, outChan chan interface{}, path string) {
 
 // Function for copying file/dirs
 
-func Copy(id string, outChan chan interface{}, oldpath, newpath string) {
+func Copy(id string, outChan chan *ResultSet, oldpath, newpath string) {
 	file, err := os.Open(oldpath)
 	if err != nil {
 		outChan <- FailedResultSet(id, err.Error())
@@ -77,7 +77,9 @@ func Copy(id string, outChan chan interface{}, oldpath, newpath string) {
 	// to avoid a race condition
 	OpAdd()
 	// BFS Copying method
-	go func(id, oldpath, newpath string) {
+	// Was initially a separate goroutine but is now a function
+	// since the whole method is invoked as a goroutine
+	func(id, oldpath, newpath string) {
 		// Release the lock after the goroutine completes
 		defer OpDone()
 

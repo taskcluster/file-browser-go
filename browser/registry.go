@@ -44,13 +44,13 @@ func InitRegistry() {
 	cmdRegistry["putfile"] = PutFileWrapper()
 }
 
-func RunCommand (cmd string) (func (Command, chan interface{})){
-	fun , registered := cmdRegistry[cmd]
+func RunCommand (cmd Command) (func (Command, chan interface{})){
 	if cmd.Id == "" {
 		return func(c Command, outChan chan interface{}){
 			outChan <- FailedResultSet("", "No id specified")
 		}
 	}
+	fun , registered := cmdRegistry[cmd.Cmd]
 	if !registered {
 		panic("Command not present")
 	}

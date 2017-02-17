@@ -32,7 +32,7 @@ func Run(in *os.File, out *os.File) {
 			fmt.Print(err.Error())
 			break
 		}
-		go RunCommand(cmd.Cmd)(cmd, outChan)
+		go RunCommand(cmd)(cmd, outChan)
 	}
 	if err == io.EOF {
 		return

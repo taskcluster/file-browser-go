@@ -46,6 +46,11 @@ func InitRegistry() {
 
 func RunCommand (cmd string) (func (Command, chan interface{})){
 	fun , registered := cmdRegistry[cmd]
+	if cmd.Id == "" {
+		return func(c Command, outChan chan interface{}){
+			outChan <- FailedResultSet("", "No id specified")
+		}
+	}
 	if !registered {
 		panic("Command not present")
 	}

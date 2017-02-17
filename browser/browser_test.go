@@ -328,7 +328,7 @@ func TestPutFileEmpty(t *testing.T) {
 	}
 }
 
-func TestPutFileNotExists(t *testing.T) {
+func TestPutFileBadPath(t *testing.T) {
 	path := "this/path/does/not/exist"
 	go PutFile("test", outChan, path, []byte{})
 	res := (<-outChan).(*ResultSet)

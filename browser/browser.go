@@ -13,7 +13,7 @@ type Command struct {
 	Args []string `msgpack:"args"`
 	Data []byte   `msgpack:"data"`
 }
-
+/*
 func RunCmd(cmd Command, outChan chan interface{}) {
 	if cmd.Id == "" {
 		outChan <- FailedResultSet("", "No Id supplied.")
@@ -67,12 +67,14 @@ func RunCmd(cmd Command, outChan chan interface{}) {
 	res := FailedResultSet(id, "No command specified.")
 	outChan <- res
 }
+*/
 
 func Run(in *os.File, out *os.File) {
 	decoder := msgpack.NewDecoder(in)
 	encoder := msgpack.NewEncoder(out)
 	var cmd Command
 	var err error = nil
+	InitRegistry()
 	outChan := make(chan interface{})
 	go func() {
 		for {
@@ -85,7 +87,7 @@ func Run(in *os.File, out *os.File) {
 			fmt.Print(err.Error())
 			break
 		}
-		go RunCmd(cmd, outChan)
+		go RunCommand(cmd.Cmd)(cmd, outChan)
 	}
 	if err == io.EOF {
 		return

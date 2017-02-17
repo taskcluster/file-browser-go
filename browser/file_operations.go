@@ -5,8 +5,6 @@ import (
 	"os"
 )
 
-// TODO: GetFile, PutFile, RunFile
-
 const CHUNKSIZE = 2048
 
 /* GetFile
@@ -31,20 +29,18 @@ func GetFileDiv(file *os.File) int64 {
 	return finfo.Size()/CHUNKSIZE + 1
 }
 
-func GetFile(id string, out chan interface{}, path string) {
+func GetFile(id string, out chan *ResultSet, path string) {
 	OpAdd()
 	defer OpDone()
 	if !ValidateDirPath(&path) || IsDir(path) {
 		res := FailedResultSet(id, "Not a valid path.")
 		out <- res
-		out <- nil
 		return
 	}
 	file, err := os.Open(path)
 	if err != nil {
 		res := FailedResultSet(id, err.Error())
 		out <- res
-		out <- nil
 		return
 	}
 	maxdiv := GetFileDiv(file)
@@ -90,7 +86,7 @@ else append bytes to end of file.
 Return resultset
 */
 
-func PutFile(id string, outChan chan interface{}, path string, data []byte) {
+func PutFile(id string, outChan chan *ResultSet, path string, data []byte) {
 	OpAdd()
 	defer OpDone()
 	file, err := os.OpenFile(path, os.O_CREATE|os.O_APPEND|os.O_WRONLY, 0666)

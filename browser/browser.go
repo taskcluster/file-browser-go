@@ -2,9 +2,9 @@ package browser
 
 import (
 	"fmt"
-	"gopkg.in/vmihailenco/msgpack.v2"
-	"io"
 	"os"
+
+	"gopkg.in/vmihailenco/msgpack.v2"
 )
 
 type Command struct {
@@ -20,7 +20,7 @@ func Run(in *os.File, out *os.File) {
 	var cmd Command
 	var err error = nil
 	InitRegistry()
-	outChan := make(chan interface{})
+	outChan := make(chan *ResultSet)
 	go func() {
 		for {
 			encoder.Encode(<-outChan)
@@ -33,8 +33,5 @@ func Run(in *os.File, out *os.File) {
 			break
 		}
 		go RunCommand(cmd)(cmd, outChan)
-	}
-	if err == io.EOF {
-		return
 	}
 }

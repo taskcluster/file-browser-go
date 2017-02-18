@@ -16,6 +16,7 @@ const TEST_HOME = process.env.TEST_HOME;
 
 describe ('Basic', function(){
 
+  this.timeout(1000)
   before(function(){
     shell = child_process.spawn ('./file-browser-go', [] , {
       stdio: ['pipe', 'pipe', 'pipe']

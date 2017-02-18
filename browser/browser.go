@@ -1,10 +1,8 @@
 package browser
 
 import (
-	"fmt"
-	"os"
-
 	"gopkg.in/vmihailenco/msgpack.v2"
+	"os"
 )
 
 type Command struct {
@@ -15,22 +13,21 @@ type Command struct {
 }
 
 func Run(in *os.File, out *os.File) {
-	decoder := msgpack.NewDecoder(in)
-	encoder := msgpack.NewEncoder(out)
-	var cmd Command
-	var err error = nil
-	outChan := make(chan *ResultSet)
-	go func() {
-		for {
-			encoder.Encode(<-outChan)
-		}
+	// decoder := msgpack.NewDecoder(in)
+	// var err error = nil
+	defer func() {
+		in.Close()
+		out.Close()
 	}()
+	outChan := make(chan *ResultSet)
+	// inChan := make(chan Command)
+
+	go EncodeCompressWrite(outChan, out)
+	// go DecompressDecode(inChan, in)
 	for {
-		err = decoder.Decode(&cmd)
-		if err != nil {
-			fmt.Print(err.Error())
-			break
-		}
+		var cmd Command
+		msgpack.NewDecoder(in).Decode(&cmd)
 		go RunCommand(cmd, outChan)
 	}
+
 }

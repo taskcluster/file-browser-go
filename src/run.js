@@ -9,7 +9,7 @@ var run = async () => {
       stdio: ['pipe','pipe', 'ignore'],
       detached: true
     });
-    let fb = new FileBrowser(shell);
+    let fb = new FileBrowser(shell.stdin, shell.stdout);
     let result;
 		await ls(fb, '/');
 		await ls(fb, '/Users/chinmaykousik/');

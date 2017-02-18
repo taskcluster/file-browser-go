@@ -1,4 +1,3 @@
-mkdir test_dir
 
 export TEST_HOME=`pwd`/test_dir
 echo "Running tests in $TEST_HOME"
@@ -28,9 +27,10 @@ make_cp () {
 	mkdir -p $TEST_HOME/cpdest
 }
 
+rm -rf test_dir
+mkdir test_dir
 make_ls
 make_rm
 make_mv
 make_cp
 DEBUG=browser,test,registry npm test
-rm -rf test_dir

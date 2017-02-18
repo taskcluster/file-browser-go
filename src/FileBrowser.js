@@ -11,6 +11,7 @@ const
   lock      = require('lock')(),
   _         = require('lodash'),
   slugid    = require('slugid'),
+  zlib      = require('zlib'),
   fs        = require('fs');
 
 const
@@ -34,19 +35,21 @@ class FileBrowser {
 
     // Table that maps from id to resolver
     this._cb = {}
+    
+    //Decompression stream
+    this.unzip = zlib.createGunzip()
+    this.zip = through2(function (chunk, enc, cb) {
+      this.push(zlib.gzipSync(chunk))
+      cb()
+    })
+
+    this.zip.on('data', debug)
+
 
     this.stdout = msp.createDecodeStream();
-    // this.testOut = msp.createDecodeStream();
 
     this.stdin.pipe(inStream);
-    // this.stdin.pipe(this.testOut);
-    outStream.pipe(this.stdout);
-
-    // this.stdout.setMaxListeners(0);
-
-    // this.testOut.on('data', (data) => {
-    //   debug("Wrote: ", data);
-    // });
+    outStream.pipe(this.unzip).pipe(this.stdout);
 
     this.stdout.on('data', (data) => {
       if(!data.id) return;

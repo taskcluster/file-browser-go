@@ -1,3 +1,4 @@
+rm -rf test_dir
 mkdir test_dir
 
 export TEST_HOME=`pwd`/test_dir
@@ -33,4 +34,3 @@ make_rm
 make_mv
 make_cp
 DEBUG=browser,test,registry npm test
-rm -rf test_dir

@@ -7,7 +7,7 @@ const
   Buffer    = require('buffer').Buffer,
   msp       = require('msgpack-lite'),
   through2  = require('through2'),
-  Promise   = require('Promise'),
+  Promise   = require('bluebird'),
   lock      = require('lock')(),
   _         = require('lodash'),
   slugid    = require('slugid'),
@@ -69,9 +69,8 @@ class FileBrowser {
       self[c] = async (src, dest) => {
         let cmd = Command[c](src, dest);
         let result = await self._writeAndResolve(cmd);
-        debug('Received: ', data);
         delete this._cb[cmd.id];
-        if (data.error) throw new Error(data.error);
+        if (result.error) throw new Error(result.error);
         return result;
       }
 
@@ -82,9 +81,8 @@ class FileBrowser {
       self[c] = async (path) => {
         let cmd = Command[c](path);
         let result = await self._writeAndResolve(cmd);
-        debug('Received: ', data);
         delete this._cb[cmd.id];
-        if (data.error != '') throw new Error(data.error);
+        if (result.error) throw new Error(result.error);
         return result;
       }
 
@@ -138,7 +136,7 @@ class FileBrowser {
             // debug(cmd);
             result = await self._writeAndResolve(cmd);
             // debug(result);
-            if (result.error != '') {
+            if (result.error) {
               fail = true;
               break;
             }
@@ -200,7 +198,8 @@ class FileBrowser {
     let writer = gen.next().value;
     stream.write(data);
     stream.end();
-    return await writer;
+    let result = await writer;
+    return result;
   }
 
   // Wrapper methods for _getfile

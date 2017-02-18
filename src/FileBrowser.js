@@ -71,7 +71,7 @@ class FileBrowser {
         let result = await self._writeAndResolve(cmd);
         debug('Received: ', data);
         delete this._cb[cmd.id];
-        if (data.error != '') throw new Error(data.error);
+        if (data.error) throw new Error(data.error);
         return result;
       }
 
@@ -169,7 +169,7 @@ class FileBrowser {
       self.stdin.write(cmd);
       self._cb[cmd.id] = (data) => {
         // debug('Getfile :', data);
-        if (data.error != '') {
+        if (data.error) {
           outStream.end();
           return reject(new Error(data.error));
         }

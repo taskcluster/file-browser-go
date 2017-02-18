@@ -5,7 +5,12 @@ import (
 	"os"
 )
 
-func List(id string, outChan chan *ResultSet, path string) {
+func init() {
+	RegisterCommand("ls", OnePathWrapper(List))
+	RegisterCommand("mkdir", OnePathWrapper(MakeDirectory))
+}
+
+func List(id string, outChan chan<- *ResultSet, path string) {
 	OpAdd()
 	defer OpDone()
 	if !ValidateDirPath(&path) || !IsDir(path) {
@@ -31,7 +36,7 @@ func List(id string, outChan chan *ResultSet, path string) {
 	}
 }
 
-func MakeDirectory(id string, outChan chan *ResultSet, path string) {
+func MakeDirectory(id string, outChan chan<- *ResultSet, path string) {
 	OpAdd()
 	defer OpDone()
 	if !ValidateDirPath(&path) {

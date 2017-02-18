@@ -77,3 +77,35 @@ func ValidateDirPath(dir *string) bool {
 	}
 	return true
 }
+
+// Helper functions to wrap methods
+
+func OnePathWrapper(fun func(string, chan<- *ResultSet, string)) func(Command, chan<- *ResultSet) {
+	return func(cmd Command, outChan chan<- *ResultSet) {
+		if len(cmd.Args) == 0 {
+			outChan <- FailedResultSet(cmd.Id, "No path specified")
+			return
+		}
+		fun(cmd.Id, outChan, cmd.Args[0])
+	}
+}
+
+func TwoPathWrapper(fun func(string, chan<- *ResultSet, string, string)) func(Command, chan<- *ResultSet) {
+	return func(cmd Command, outChan chan<- *ResultSet) {
+		if len(cmd.Args) < 2 {
+			outChan <- FailedResultSet(cmd.Id, "Not enough arguments")
+			return
+		}
+		fun(cmd.Id, outChan, cmd.Args[0], cmd.Args[1])
+	}
+}
+
+func PutFileWrapper() func(Command, chan<- *ResultSet) {
+	return func(cmd Command, outChan chan<- *ResultSet) {
+		if len(cmd.Args) == 0 {
+			outChan <- FailedResultSet(cmd.Id, "Not enough arguments")
+			return
+		}
+		PutFile(cmd.Id, outChan, cmd.Args[0], cmd.Data)
+	}
+}

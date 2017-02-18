@@ -20,6 +20,7 @@
   "dependencies": {
     "babel-compile": "^2.0.0",
     "babel-preset-taskcluster": "^3.0.0",
+    "bluebird": "^3.4.7",
     "buffer": "^5.0.3",
     "debug": "^2.6.0",
     "docker": "^1.0.0",

@@ -7,7 +7,7 @@ const
   Buffer    = require('buffer').Buffer,
   msp       = require('msgpack-lite'),
   through2  = require('through2'),
-  Promise   = require('Promise'),
+  Promise   = require('bluebird'),
   lock      = require('lock')(),
   _         = require('lodash'),
   slugid    = require('slugid'),

@@ -8,7 +8,7 @@ import (
 )
 
 // Utility Functions
-type Pair struct {
+type pair struct {
 	First, Second string
 }
 
@@ -21,10 +21,10 @@ func Min(a, b int) int {
 
 func CompareDirectory(root1, root2 string) bool {
 	q := list.New()
-	q.PushBack(Pair{root1, root2})
+	q.PushBack(pair{root1, root2})
 	m, n := len(root1), len(root2)
 	for q.Len() > 0 {
-		temp := q.Front().Value.(Pair)
+		temp := q.Front().Value.(pair)
 		q.Remove(q.Front())
 		p1, p2 := temp.First, temp.Second
 		if p1[m:] != p2[n:] {
@@ -45,7 +45,7 @@ func CompareDirectory(root1, root2 string) bool {
 				return false
 			}
 			for i := range names1 {
-				q.PushBack(Pair{filepath.Join(p1, names1[i]), filepath.Join(p2, names2[i])})
+				q.PushBack(pair{filepath.Join(p1, names1[i]), filepath.Join(p2, names2[i])})
 			}
 		}
 	}

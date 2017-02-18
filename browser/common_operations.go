@@ -7,7 +7,13 @@ import (
 	"path/filepath"
 )
 
-func Move(id string, outChan chan *ResultSet, oldpath, newpath string) {
+func init() {
+	RegisterCommand("mv", TwoPathWrapper(Move))
+	RegisterCommand("rm", OnePathWrapper(Remove))
+	RegisterCommand("cp", TwoPathWrapper(Copy))
+}
+
+func Move(id string, outChan chan<- *ResultSet, oldpath, newpath string) {
 	OpAdd()
 	if IsLocked(oldpath) {
 		outChan <- FailedResultSet(id, "Path locked for another operation.")
@@ -32,7 +38,7 @@ func Move(id string, outChan chan *ResultSet, oldpath, newpath string) {
 	}
 }
 
-func Remove(id string, outChan chan *ResultSet, path string) {
+func Remove(id string, outChan chan<- *ResultSet, path string) {
 	OpAdd()
 	if IsLocked(path) {
 		outChan <- FailedResultSet(id, "Path locked for another operation.")
@@ -55,7 +61,7 @@ func Remove(id string, outChan chan *ResultSet, path string) {
 
 // Function for copying file/dirs
 
-func Copy(id string, outChan chan *ResultSet, oldpath, newpath string) {
+func Copy(id string, outChan chan<- *ResultSet, oldpath, newpath string) {
 	file, err := os.Open(oldpath)
 	if err != nil {
 		outChan <- FailedResultSet(id, err.Error())

@@ -19,7 +19,6 @@ func Run(in *os.File, out *os.File) {
 	encoder := msgpack.NewEncoder(out)
 	var cmd Command
 	var err error = nil
-	InitRegistry()
 	outChan := make(chan *ResultSet)
 	go func() {
 		for {
@@ -32,6 +31,6 @@ func Run(in *os.File, out *os.File) {
 			fmt.Print(err.Error())
 			break
 		}
-		go RunCommand(cmd)(cmd, outChan)
+		go RunCommand(cmd, outChan)
 	}
 }

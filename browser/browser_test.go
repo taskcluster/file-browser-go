@@ -8,14 +8,8 @@ import (
 	"testing"
 )
 
-var outChan chan *ResultSet
-var dummyChan chan *ResultSet
-
-func TestMain(m *testing.M) {
-	outChan = make(chan *ResultSet)
-	dummyChan = make(chan *ResultSet, 10)
-	os.Exit(m.Run())
-}
+var outChan chan *ResultSet = make(chan *ResultSet)
+var dummyChan chan *ResultSet = make(chan *ResultSet, 10)
 
 func TestList(t *testing.T) {
 	temp, err := ioutil.TempDir("", "list")
@@ -37,7 +31,7 @@ func TestList(t *testing.T) {
 }
 
 func TestListNotExist(t *testing.T) {
-	var res *ResultSet = nil
+	var res *ResultSet
 	go List("test", outChan, "does/not/exist")
 	res = (<-outChan)
 	if res.Err == "" {
@@ -50,7 +44,7 @@ func TestMakeDirectoryAndRemove(t *testing.T) {
 	home, err := ioutil.TempDir("", "MakeAndRemove")
 	FailNotNil(err, t)
 	paths := []string{"/test_folder", "/test_folder/sub_folder"}
-	var res *ResultSet = nil
+	var res *ResultSet
 
 	defer func() {
 		Remove("test", dummyChan, filepath.Join(home, paths[0]))
@@ -228,7 +222,7 @@ func TestPutFile(t *testing.T) {
 
 	// Write data to newpath using PutFile
 	var res *ResultSet
-	var count int = 0
+	var count int
 	for count < len(data) {
 		i := Min(CHUNKSIZE, len(data)-count)
 		w := data[count : count+i]

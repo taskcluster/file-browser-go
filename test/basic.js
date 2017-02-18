@@ -18,9 +18,10 @@ describe ('Basic', function(){
 
   before(function(){
     shell = child_process.spawn ('./file-browser-go', [] , {
-      stdio: ['pipe', 'pipe', 'ignore']
+      stdio: ['pipe', 'pipe', 'pipe']
     });
     browser = new FileBrowser(shell.stdin, shell.stdout);
+    shell.stderr.pipe(process.stderr)
   });
 
   it('can list contents of a directory', async function() {

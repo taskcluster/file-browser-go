@@ -34,3 +34,4 @@ lib
 file-browser-go
 src/gopkg.in/
 npm-debug.log
+test_dir/

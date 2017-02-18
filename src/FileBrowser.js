@@ -136,7 +136,7 @@ class FileBrowser {
             // debug(cmd);
             result = await self._writeAndResolve(cmd);
             // debug(result);
-            if (result.error != '') {
+            if (result.error) {
               fail = true;
               break;
             }
@@ -198,7 +198,8 @@ class FileBrowser {
     let writer = gen.next().value;
     stream.write(data);
     stream.end();
-    return await writer;
+    let result = await writer;
+    return result;
   }
 
   // Wrapper methods for _getfile

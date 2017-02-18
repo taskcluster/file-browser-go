@@ -6,6 +6,7 @@ const
   assert        = require('assert'),
   fs            = require('fs'),
   _             = require('lodash'),
+  path          = require('path'),
   StringDecoder = require('string_decoder').StringDecoder;
 
 const decoder = new StringDecoder();
@@ -25,51 +26,52 @@ describe ('Basic', function(){
   });
 
   it('can list contents of a directory', async function() {
-    let result = await browser.ls(TEST_HOME + '/ls');
+    let result = await browser.ls(path.join(TEST_HOME, 'ls'));
     assert(result.files.length === 4);
   });
 
   it('can remove a directory', async function() {
 
-    assert(fs.existsSync(TEST_HOME + '/rmdir'));
-    assert(fs.existsSync(TEST_HOME + '/rmfile'));
+    assert(fs.existsSync(path.join(TEST_HOME,'/rmdir')));
+    assert(fs.existsSync(path.join(TEST_HOME,'/rmfile')));
 
-    let result = await browser.rm(TEST_HOME + '/rmdir');
+    let result = await browser.rm(path.join(TEST_HOME,'/rmdir'));
     
-    result = await browser.rm(TEST_HOME + '/rmfile');
+    result = await browser.rm(path.join(TEST_HOME,'/rmfile'));
 
-    assert(!fs.existsSync(TEST_HOME + '/rmdir'));
-    assert(!fs.existsSync(TEST_HOME + '/rmfile'));
+    assert(!fs.existsSync(path.join(TEST_HOME,'/rmdir')));
+    assert(!fs.existsSync(path.join(TEST_HOME,'/rmfile')));
   });
 
   it('can create a directory', async function() {
-    assert(!fs.existsSync(TEST_HOME + '/mkdir'));
-    let result = await browser.mkdir(TEST_HOME + '/mkdir');
-    assert(fs.existsSync(TEST_HOME + '/mkdir'));
+    assert(!fs.existsSync(path.join(TEST_HOME,'/mkdir')));
+    let result = await browser.mkdir(path.join(TEST_HOME,'/mkdir'));
+    assert(fs.existsSync(path.join(TEST_HOME,'/mkdir')));
   });
 
   it('can copy a directory', async function() {
-    let result = await browser.cp(TEST_HOME + '/cpsrc', TEST_HOME + '/cpdest');
-    assert(fs.existsSync(TEST_HOME + '/cpdest/cpsrc'));
+    let result = await browser.cp(path.join(TEST_HOME,'/cpsrc'), 
+      path.join(TEST_HOME,'/cpdest'));
+    assert(fs.existsSync(path.join(TEST_HOME,'/cpdest/cpsrc')));
   });
 
   it('can move a directory', async function() {
-    assert(fs.existsSync(TEST_HOME + '/mvdir'));
-    assert(fs.existsSync(TEST_HOME + '/mvfile'));
+    assert(fs.existsSync(path.join(TEST_HOME,'/mvdir')));
+    assert(fs.existsSync(path.join(TEST_HOME,'/mvfile')));
 
-    let result = await browser.mv(TEST_HOME + '/mvfile', TEST_HOME + '/mvdir/mvfile');
+    let result = await browser.mv(path.join(TEST_HOME,'/mvfile'), path.join(TEST_HOME,'/mvdir/mvfile'));
     debug(result);
 
-    assert(fs.existsSync(TEST_HOME + '/mvdir/mvfile'));
+    assert(fs.existsSync(path.join(TEST_HOME,'/mvdir/mvfile')));
 
-    result = await browser.mv(TEST_HOME + '/mvdir', TEST_HOME + '/mvdest');
+    result = await browser.mv(path.join(TEST_HOME,'/mvdir'), path.join(TEST_HOME,'/mvdest'));
 
-    assert(fs.existsSync(TEST_HOME + '/mvdest'));
+    assert(fs.existsSync(path.join(TEST_HOME,'/mvdest')));
   });
 
   it('_getfile test', async function () {
-    const fileName = TEST_HOME + '/ls/_getfileTest.txt';
-    const destFile = TEST_HOME + '/_getfileTest.txt';
+    const fileName = path.join(TEST_HOME,'/ls/_getfileTest.txt');
+    const destFile = path.join(TEST_HOME,'/_getfileTest.txt');
     // Create a new file and append 'Hello'
     fs.appendFileSync(fileName, "Hello");
     let gen = browser._getfile(fileName);
@@ -93,8 +95,8 @@ describe ('Basic', function(){
   });
 
   it('_putfile test', async function () {
-    const fileName = TEST_HOME + '/putFileTest.txt';
-    const dest = TEST_HOME + '/ls/putFileTest.txt';
+    const fileName = path.join(TEST_HOME,'/putFileTest.txt');
+    const dest = path.join(TEST_HOME,'/ls/putFileTest.txt');
     // Create file 
     fs.appendFileSync(fileName, "Hello");
     
@@ -114,7 +116,7 @@ describe ('Basic', function(){
   });
 
   it('test readFileAsString', async function() {
-    const fileName = TEST_HOME + '/readFileAsString.txt';
+    const fileName = path.join(TEST_HOME,'/readFileAsString.txt');
     fs.appendFileSync(fileName, 'Hello');
     let str = await browser.readFileAsString(fileName);
     debug(str);
@@ -122,7 +124,7 @@ describe ('Basic', function(){
   });
 
   it('test writeToFile', async function() {
-    const fileName = TEST_HOME + '/writeToFile.txt';
+    const fileName = path.join(TEST_HOME,'/writeToFile.txt');
     await browser.writeToFile(fileName, 'Hello');
     let str = fs.readFileSync(fileName).toString();
     debug(str);

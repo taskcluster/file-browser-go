@@ -69,9 +69,8 @@ class FileBrowser {
       self[c] = async (src, dest) => {
         let cmd = Command[c](src, dest);
         let result = await self._writeAndResolve(cmd);
-        debug('Received: ', data);
         delete this._cb[cmd.id];
-        if (data.error) throw new Error(data.error);
+        if (result.error) throw new Error(result.error);
         return result;
       }
 
@@ -82,9 +81,8 @@ class FileBrowser {
       self[c] = async (path) => {
         let cmd = Command[c](path);
         let result = await self._writeAndResolve(cmd);
-        debug('Received: ', data);
         delete this._cb[cmd.id];
-        if (data.error != '') throw new Error(data.error);
+        if (result.error) throw new Error(result.error);
         return result;
       }
 

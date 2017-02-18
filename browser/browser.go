@@ -11,7 +11,7 @@ type Command struct {
 	Id   string   `msgpack:"id"`
 	Cmd  string   `msgpack:"cmd"`
 	Args []string `msgpack:"args"`
-	Data []byte   `msgpack:"data"`
+	Data []byte   `msgpack:"data,omitempty"`
 }
 
 func Run(in *os.File, out *os.File) {

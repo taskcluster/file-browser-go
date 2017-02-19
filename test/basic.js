@@ -1,7 +1,7 @@
 /* Check if it works */
 const
   child_process = require('child_process'),
-	debug					=	require('debug')('test'),
+  debug         =  require('debug')('test'),
   FileBrowser   = require('../lib/FileBrowser'),
   assert        = require('assert'),
   fs            = require('fs'),
@@ -107,6 +107,7 @@ describe ('Basic', function(){
     let writer = gen.next().value;
     inStream.pipe(stream);
     let result = await writer;
+    assert(result)
     // assert(result.error === "");
 
     let src = fs.readFileSync(fileName);
@@ -125,7 +126,9 @@ describe ('Basic', function(){
 
   it('test writeToFile', async function() {
     const fileName = path.join(TEST_HOME,'/writeToFile.txt');
-    await browser.writeToFile(fileName, 'Hello');
+    let result = await browser.writeToFile(fileName, 'Hello');
+    assert(result)
+    debug(result)
     let str = fs.readFileSync(fileName).toString();
     debug(str);
     assert(str === 'Hello');

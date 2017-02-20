@@ -1,0 +1,47 @@
+{
+  "name": "file-browser-go",
+  "version": "1.0.0",
+  "description": "This contains a go executable and a node API for the file browser project",
+  "main": "index.js",
+  "scripts": {
+    "test": "mocha .test",
+    "compile": "babel-compile -p taskcluster src:lib test:.test",
+    "pretest": "go build && npm run compile"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/taskcluster/file-browser-go.git"
+  },
+  "author": "Chinmay J. Kousik",
+  "license": "MPL-2.0",
+  "bugs": {
+    "url": "https://github.com/taskcluster/file-browser-go/issues"
+  },
+  "dependencies": {
+    "babel-compile": "^2.0.0",
+    "babel-preset-taskcluster": "^3.0.0",
+    "bluebird": "^3.4.7",
+    "buffer": "^5.0.3",
+    "debug": "^2.6.0",
+    "docker": "^1.0.0",
+    "lock": "^0.1.3",
+    "lodash": "^4.17.4",
+    "mocha": "^3.1.2",
+    "msgpack-lite": "^0.1.26",
+    "msgpack-stream": "0.0.12",
+    "path": "^0.12.7",
+    "react": "^15.4.2",
+    "react-dom": "^15.4.2",
+    "react-redux": "^5.0.2",
+    "redux": "^3.6.0",
+    "slugid": "^1.1.0",
+    "through2": "^2.0.1",
+    "webpack": "^2.2.1",
+    "webpack-dev-server": "^2.3.0",
+    "ws-shell": "^0.1.5"
+  },
+  "devDependencies": {
+    "mocha": "^3.1.2"
+  },
+  "homepage": "https://github.com/taskcluster/file-browser-go#readme"
+}

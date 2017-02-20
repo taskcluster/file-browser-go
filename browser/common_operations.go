@@ -1,7 +1,6 @@
 package browser
 
 import (
-	"container/list"
 	"io"
 	"os"
 	"path/filepath"
@@ -15,18 +14,17 @@ func init() {
 
 func Move(id string, outChan chan<- *ResultSet, oldpath, newpath string) {
 	OpAdd()
+	defer func() {
+		UnlockPath(oldpath)
+		UnlockPath(newpath)
+		OpDone()
+	}()
 	if IsLocked(oldpath) {
 		outChan <- FailedResultSet(id, "Path locked for another operation.")
 		return
 	}
 	LockPath(oldpath)
 	LockPath(newpath)
-
-	defer func() {
-		UnlockPath(oldpath)
-		UnlockPath(newpath)
-		OpDone()
-	}()
 
 	err := os.Rename(oldpath, newpath)
 	if err != nil {
@@ -40,15 +38,15 @@ func Move(id string, outChan chan<- *ResultSet, oldpath, newpath string) {
 
 func Remove(id string, outChan chan<- *ResultSet, path string) {
 	OpAdd()
+	defer func() {
+		UnlockPath(path)
+		OpDone()
+	}()
 	if IsLocked(path) {
 		outChan <- FailedResultSet(id, "Path locked for another operation.")
 		return
 	}
 	LockPath(path)
-	defer func() {
-		UnlockPath(path)
-		OpDone()
-	}()
 	err := os.RemoveAll(path)
 	if err != nil {
 		outChan <- FailedResultSet(id, err.Error())
@@ -61,95 +59,117 @@ func Remove(id string, outChan chan<- *ResultSet, path string) {
 
 // Function for copying file/dirs
 
-func Copy(id string, outChan chan<- *ResultSet, oldpath, newpath string) {
-	file, err := os.Open(oldpath)
+func Copy(id string, outChan chan<- *ResultSet, src, dest string) {
+	OpAdd()
+	defer OpDone()
+	odir, ndir := true, true
+	oinfo, err := os.Stat(src)
 	if err != nil {
 		outChan <- FailedResultSet(id, err.Error())
 		return
 	}
-	file.Close()
+	odir = oinfo.IsDir()
 
-	finfo, err := os.Stat(newpath)
-	if err != nil || !finfo.IsDir() {
-		outChan <- FailedResultSet(id, "Destination not valid.")
+	ninfo, err := os.Stat(dest)
+	if ninfo == nil {
+		outChan <- FailedResultSet(id, "FileInfo nil")
+		return
+	} else {
+		ndir = ninfo.IsDir()
+	}
+	if os.IsNotExist(err) {
+		// check if parent exists
+		pinfo, err := os.Stat(filepath.Dir(dest))
+		if os.IsNotExist(err) {
+			outChan <- FailedResultSet(id, err.Error())
+			return
+		}
+		if !pinfo.IsDir() {
+			outChan <- FailedResultSet(id, filepath.Dir(dest)+" is not a directory.")
+			return
+		}
+		ndir = false
+	}
+
+	// Case 1: if src is a directory and dest is a file
+	if odir && !ndir {
+		outChan <- FailedResultSet(id, "Directory cannot be copied to file")
 		return
 	}
 
-	// Append the filename to the new path
-	_, f := filepath.Split(oldpath)
-	newpath = filepath.Join(newpath, f)
+	// Case 2: if src is a file and dest is a directory
+	if !odir && ndir {
+		// Convert to Case 3
+		_, f := filepath.Split(src)
+		dest = filepath.Join(dest, f)
+		ndir = false
+	}
 
-	// Add to the wait group before the go routine
-	// to avoid a race condition
-	OpAdd()
-	// BFS Copying method
-	// Was initially a separate goroutine but is now a function
-	// since the whole method is invoked as a goroutine
-	func(id, oldpath, newpath string) {
-		// Release the lock after the goroutine completes
-		defer OpDone()
+	// Case 3: If src and dest are both files
+	if !(ndir || odir) {
+		of, err := os.Open(src)
+		if err != nil {
+			outChan <- FailedResultSet(id, err.Error())
+			return
+		}
+		nf, err := os.Open(dest)
+		defer func() {
+			of.Close()
+			nf.Close()
+		}()
+		if err != nil {
+			outChan <- FailedResultSet(id, err.Error())
+			return
+		}
+		_, err = io.Copy(nf, of)
+		if err != nil {
+			outChan <- FailedResultSet(id, err.Error())
+			return
+		}
+		outChan <- &ResultSet{Id: id}
+		return
+	}
 
-		queue := list.New()
-		lockedPaths := make([]string, 0)
-		queue.PushBack(oldpath)
-		errStr := ""
-
-		for queue.Len() > 0 {
-			path := queue.Front().Value.(string)
-			queue.Remove(queue.Front())
-
-			file, err := os.Open(path)
+	// Case 4: src and dest are directories
+	_, f := filepath.Split(src)
+	dest = filepath.Join(dest, f)
+	walkFn := func(path string, info os.FileInfo, err error) error {
+		npath := dest + path[len(src):]
+		if err != nil {
+			return err
+		}
+		if info.IsDir() {
+			err = os.Mkdir(npath, info.Mode().Perm())
 			if err != nil {
-				errStr += err.Error() + "\n"
-				continue
+				return err
 			}
-			lockedPaths = append(lockedPaths, path)
-			LockPath(path)
-			finfo, err := file.Stat()
+		} else {
+			file, err := os.OpenFile(npath, os.O_CREATE|os.O_WRONLY, 0777)
 			if err != nil {
-				errStr += err.Error() + "\n"
-				continue
+				return err
 			}
-			npath := newpath + path[len(oldpath):]
-			if finfo.IsDir() {
-				err = os.Mkdir(npath, finfo.Mode().Perm())
-				if err != nil {
-					errStr += err.Error() + "\n"
-					continue
-				}
-				sub, err := file.Readdirnames(-1)
-				if err != nil {
-					errStr += err.Error() + "\n"
-					continue
-				}
-				for _, name := range sub {
-					queue.PushBack(filepath.Join(path, name))
-				}
-			} else {
-				nfile, err := os.OpenFile(npath, os.O_CREATE|os.O_WRONLY, 0777)
-				if err != nil {
-					errStr += err.Error() + "\n"
-					continue
-				}
-				_, err = io.Copy(nfile, file)
-				if err != nil {
-					errStr += err.Error() + "\n"
-					continue
-				}
-				_ = nfile.Chmod(finfo.Mode())
-				nfile.Close()
+			oldfile, err := os.Open(path)
+			if err != nil {
+				file.Close()
+				return err
 			}
-			file.Close()
+			defer func() {
+				_ = file.Close()
+				_ = oldfile.Close()
+			}()
+			_, err = io.Copy(file, oldfile)
+			if err != nil {
+				return err
+			}
 		}
-		for _, p := range lockedPaths {
-			UnlockPath(p)
-		}
+		return nil
+	}
 
-		res := &ResultSet{
-			Id:  id,
-			Err: errStr,
-		}
-		outChan <- res
-
-	}(id, oldpath, newpath)
+	err = filepath.Walk(src, walkFn)
+	if err != nil {
+		outChan <- FailedResultSet(id, err.Error())
+	}
+	outChan <- &ResultSet{
+		Id: id,
+	}
 }

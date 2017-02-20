@@ -13,7 +13,8 @@ func init() {
 func List(id string, outChan chan<- *ResultSet, path string) {
 	OpAdd()
 	defer OpDone()
-	if !ValidateDirPath(&path) || !IsDir(path) {
+	path, valid := ValidateDirPath(path)
+	if !valid || !IsDir(path) {
 		outChan <- FailedResultSet(id, "Not a directory.")
 		return
 	}
@@ -39,7 +40,8 @@ func List(id string, outChan chan<- *ResultSet, path string) {
 func MakeDirectory(id string, outChan chan<- *ResultSet, path string) {
 	OpAdd()
 	defer OpDone()
-	if !ValidateDirPath(&path) {
+	path, valid := ValidateDirPath(path)
+	if !valid {
 		outChan <- FailedResultSet(id, "Not a valid path.")
 		return
 	}

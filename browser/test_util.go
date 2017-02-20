@@ -57,12 +57,11 @@ func Exists(path string) bool {
 	if err == nil {
 		return true
 	}
-	return os.IsExist(err)
+	return !os.IsNotExist(err)
 }
 
 func FailNotNil(err error, t *testing.T) {
 	if err != nil {
-		t.Log(err)
-		t.FailNow()
+		t.Fatal(err)
 	}
 }

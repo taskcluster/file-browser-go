@@ -6,16 +6,16 @@ import (
 
 var registryLock sync.Mutex
 
-var cmdRegistry map[string](func(Command, chan<- *ResultSet)) = make(map[string]func(Command, chan<- *ResultSet))
+var cmdRegistry = make(map[string]func(Command, chan<- *ResultSet))
 
 func RegisterCommand(command string, fun func(Command, chan<- *ResultSet)) {
 	registryLock.Lock()
+	defer registryLock.Unlock()
 	_, ok := cmdRegistry[command]
 	if ok {
 		panic("Command already registered")
 	}
 	cmdRegistry[command] = fun
-	registryLock.Unlock()
 }
 
 func RunCommand(cmd Command, outChan chan<- *ResultSet) {
@@ -23,7 +23,11 @@ func RunCommand(cmd Command, outChan chan<- *ResultSet) {
 		outChan <- FailedResultSet("", "No id specified")
 		return
 	}
+	// Locking only critical section
+	registryLock.Lock()
 	fun, registered := cmdRegistry[cmd.Cmd]
+	registryLock.Unlock()
+
 	if !registered {
 		panic("Command not registered")
 	}

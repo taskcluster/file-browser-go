@@ -10,7 +10,7 @@ import (
 
 var pathLock sync.Mutex
 
-var isLocked map[string]bool = make(map[string]bool)
+var isLocked = make(map[string]bool)
 
 func LockPath(path string) {
 	pathLock.Lock()
@@ -70,12 +70,12 @@ func IsDir(dir string) bool {
 	return finfo.IsDir()
 }
 
-func ValidateDirPath(dir *string) bool {
-	*dir = filepath.Clean(*dir)
-	if !filepath.IsAbs(*dir) {
-		return false
+func ValidateDirPath(dir string) (string, bool) {
+	cleanDir := filepath.Clean(dir)
+	if !filepath.IsAbs(cleanDir) {
+		return cleanDir, false
 	}
-	return true
+	return cleanDir, true
 }
 
 // Helper functions to wrap methods

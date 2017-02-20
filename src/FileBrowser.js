@@ -36,17 +36,9 @@ class FileBrowser {
     this._cb = {}
 
     this.stdout = msp.createDecodeStream();
-    // this.testOut = msp.createDecodeStream();
 
     this.stdin.pipe(inStream);
-    // this.stdin.pipe(this.testOut);
     outStream.pipe(this.stdout);
-
-    // this.stdout.setMaxListeners(0);
-
-    // this.testOut.on('data', (data) => {
-    //   debug("Wrote: ", data);
-    // });
 
     this.stdout.on('data', (data) => {
       if(!data.id) return;
@@ -150,7 +142,7 @@ class FileBrowser {
         }
       });
 
-      srcStream.on('end', resolve);
+      srcStream.once('end', () => resolve(true));
     });
 
   }

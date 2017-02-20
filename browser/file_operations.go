@@ -37,24 +37,25 @@ func GetFileDiv(file *os.File) int64 {
 func GetFile(id string, out chan<- *ResultSet, path string) {
 	OpAdd()
 	defer OpDone()
-	if !ValidateDirPath(&path) || IsDir(path) {
-		res := FailedResultSet(id, "Not a valid path.")
-		out <- res
+	path, valid := ValidateDirPath(path)
+
+	if !valid || IsDir(path) {
+		out <- FailedResultSet(id, "Not a valid path.")
 		return
 	}
 	file, err := os.Open(path)
 	if err != nil {
-		res := FailedResultSet(id, err.Error())
-		out <- res
+		out <- FailedResultSet(id, err.Error())
 		return
 	}
 	maxdiv := GetFileDiv(file)
 
 	buff := make([]byte, CHUNKSIZE)
+
+	// Declared because GetMaxDiv returns int64
 	var i int64
 	defer file.Close()
 	for i = 1; i <= maxdiv; i++ {
-		var res *ResultSet = nil
 		n, err := file.Read(buff)
 
 		if err != nil && err != io.EOF {
@@ -65,7 +66,18 @@ func GetFile(id string, out chan<- *ResultSet, path string) {
 			break
 		}
 
-		res = &ResultSet{
+		if err == io.EOF {
+			out <- &ResultSet{
+				Id: id,
+				Data: &FileData{
+					CurrentPiece: i,
+					Data:         []byte{},
+				},
+			}
+			break
+		}
+
+		out <- &ResultSet{
 			Id: id,
 			Data: &FileData{
 				TotalPieces:  maxdiv,
@@ -73,7 +85,6 @@ func GetFile(id string, out chan<- *ResultSet, path string) {
 				Data:         buff[:n],
 			},
 		}
-		out <- res
 	}
 }
 

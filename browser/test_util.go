@@ -12,14 +12,14 @@ type pair struct {
 	First, Second string
 }
 
-func Min(a, b int) int {
+func min(a, b int) int {
 	if a < b {
 		return a
 	}
 	return b
 }
 
-func CompareDirectory(root1, root2 string) bool {
+func compareDirectory(root1, root2 string) bool {
 	q := list.New()
 	q.PushBack(pair{root1, root2})
 	m, n := len(root1), len(root2)
@@ -30,10 +30,10 @@ func CompareDirectory(root1, root2 string) bool {
 		if p1[m:] != p2[n:] {
 			return false
 		}
-		if IsDir(p1) != IsDir(p2) {
+		if isDir(p1) != isDir(p2) {
 			return false
 		}
-		if IsDir(p1) {
+		if isDir(p1) {
 			f1, err1 := os.Open(p1)
 			f2, err2 := os.Open(p2)
 			if err1 != nil || err2 != nil {

@@ -31,6 +31,6 @@ func Run(in *os.File, out *os.File) {
 			fmt.Print(err.Error())
 			break
 		}
-		go RunCommand(cmd, outChan)
+		go runCommand(cmd, outChan)
 	}
 }

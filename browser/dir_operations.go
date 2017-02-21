@@ -6,15 +6,15 @@ import (
 )
 
 func init() {
-	RegisterCommand("ls", OnePathWrapper(List))
-	RegisterCommand("mkdir", OnePathWrapper(MakeDirectory))
+	registerCommand("ls", onePathWrapper(List))
+	registerCommand("mkdir", onePathWrapper(MakeDirectory))
 }
 
 func List(id string, outChan chan<- *ResultSet, path string) {
 	OpAdd()
 	defer OpDone()
-	path, valid := ValidateDirPath(path)
-	if !valid || !IsDir(path) {
+	path, valid := validateDirPath(path)
+	if !valid || !isDir(path) {
 		outChan <- FailedResultSet(id, "Not a directory.")
 		return
 	}
@@ -40,7 +40,7 @@ func List(id string, outChan chan<- *ResultSet, path string) {
 func MakeDirectory(id string, outChan chan<- *ResultSet, path string) {
 	OpAdd()
 	defer OpDone()
-	path, valid := ValidateDirPath(path)
+	path, valid := validateDirPath(path)
 	if !valid {
 		outChan <- FailedResultSet(id, "Not a valid path.")
 		return

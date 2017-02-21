@@ -10,29 +10,29 @@ import (
 
 var pathLock sync.Mutex
 
-var isLocked = make(map[string]bool)
+var lck = make(map[string]bool)
 
-func LockPath(path string) {
+func lockPath(path string) {
 	pathLock.Lock()
-	isLocked[path] = true
+	lck[path] = true
 	pathLock.Unlock()
 }
 
-func UnlockPath(path string) {
+func unlockPath(path string) {
 	pathLock.Lock()
-	isLocked[path] = false
+	lck[path] = false
 	pathLock.Unlock()
 }
 
-func IsLocked(path string) bool {
+func isLocked(path string) bool {
 	pathLock.Lock()
 	defer pathLock.Unlock()
-	if isLocked[path] {
+	if lck[path] {
 		return true
 	}
 	dir, f := filepath.Split(path)
 	for f != "" {
-		if isLocked[dir] {
+		if lck[dir] {
 			return true
 		}
 		dir, f = filepath.Split(dir)
@@ -57,7 +57,7 @@ func WaitForOperationsToComplete() {
 	op.Wait()
 }
 
-func IsDir(dir string) bool {
+func isDir(dir string) bool {
 	file, err := os.Open(dir)
 	defer file.Close()
 	if err != nil {
@@ -70,7 +70,7 @@ func IsDir(dir string) bool {
 	return finfo.IsDir()
 }
 
-func ValidateDirPath(dir string) (string, bool) {
+func validateDirPath(dir string) (string, bool) {
 	cleanDir := filepath.Clean(dir)
 	if !filepath.IsAbs(cleanDir) {
 		return cleanDir, false
@@ -80,7 +80,7 @@ func ValidateDirPath(dir string) (string, bool) {
 
 // Helper functions to wrap methods
 
-func OnePathWrapper(fun func(string, chan<- *ResultSet, string)) func(Command, chan<- *ResultSet) {
+func onePathWrapper(fun func(string, chan<- *ResultSet, string)) func(Command, chan<- *ResultSet) {
 	return func(cmd Command, outChan chan<- *ResultSet) {
 		if len(cmd.Args) == 0 {
 			outChan <- FailedResultSet(cmd.Id, "No path specified")
@@ -90,7 +90,7 @@ func OnePathWrapper(fun func(string, chan<- *ResultSet, string)) func(Command, c
 	}
 }
 
-func TwoPathWrapper(fun func(string, chan<- *ResultSet, string, string)) func(Command, chan<- *ResultSet) {
+func twoPathWrapper(fun func(string, chan<- *ResultSet, string, string)) func(Command, chan<- *ResultSet) {
 	return func(cmd Command, outChan chan<- *ResultSet) {
 		if len(cmd.Args) < 2 {
 			outChan <- FailedResultSet(cmd.Id, "Not enough arguments")
@@ -100,7 +100,7 @@ func TwoPathWrapper(fun func(string, chan<- *ResultSet, string, string)) func(Co
 	}
 }
 
-func PutFileWrapper() func(Command, chan<- *ResultSet) {
+func putFileWrapper() func(Command, chan<- *ResultSet) {
 	return func(cmd Command, outChan chan<- *ResultSet) {
 		if len(cmd.Args) == 0 {
 			outChan <- FailedResultSet(cmd.Id, "Not enough arguments")

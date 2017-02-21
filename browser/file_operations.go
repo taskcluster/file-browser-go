@@ -6,8 +6,8 @@ import (
 )
 
 func init() {
-	RegisterCommand("getfile", OnePathWrapper(GetFile))
-	RegisterCommand("putfile", PutFileWrapper())
+	registerCommand("getfile", onePathWrapper(GetFile))
+	registerCommand("putfile", putFileWrapper())
 }
 
 const CHUNKSIZE = 2048
@@ -37,9 +37,9 @@ func GetFileDiv(file *os.File) int64 {
 func GetFile(id string, out chan<- *ResultSet, path string) {
 	OpAdd()
 	defer OpDone()
-	path, valid := ValidateDirPath(path)
+	path, valid := validateDirPath(path)
 
-	if !valid || IsDir(path) {
+	if !valid || isDir(path) {
 		out <- FailedResultSet(id, "Not a valid path.")
 		return
 	}

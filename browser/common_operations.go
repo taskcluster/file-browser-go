@@ -7,24 +7,24 @@ import (
 )
 
 func init() {
-	RegisterCommand("mv", TwoPathWrapper(Move))
-	RegisterCommand("rm", OnePathWrapper(Remove))
-	RegisterCommand("cp", TwoPathWrapper(Copy))
+	registerCommand("mv", twoPathWrapper(Move))
+	registerCommand("rm", onePathWrapper(Remove))
+	registerCommand("cp", twoPathWrapper(Copy))
 }
 
 func Move(id string, outChan chan<- *ResultSet, oldpath, newpath string) {
 	OpAdd()
 	defer func() {
-		UnlockPath(oldpath)
-		UnlockPath(newpath)
+		unlockPath(oldpath)
+		unlockPath(newpath)
 		OpDone()
 	}()
-	if IsLocked(oldpath) {
+	if isLocked(oldpath) {
 		outChan <- FailedResultSet(id, "Path locked for another operation.")
 		return
 	}
-	LockPath(oldpath)
-	LockPath(newpath)
+	lockPath(oldpath)
+	lockPath(newpath)
 
 	err := os.Rename(oldpath, newpath)
 	if err != nil {
@@ -39,14 +39,14 @@ func Move(id string, outChan chan<- *ResultSet, oldpath, newpath string) {
 func Remove(id string, outChan chan<- *ResultSet, path string) {
 	OpAdd()
 	defer func() {
-		UnlockPath(path)
+		unlockPath(path)
 		OpDone()
 	}()
-	if IsLocked(path) {
+	if isLocked(path) {
 		outChan <- FailedResultSet(id, "Path locked for another operation.")
 		return
 	}
-	LockPath(path)
+	lockPath(path)
 	err := os.RemoveAll(path)
 	if err != nil {
 		outChan <- FailedResultSet(id, err.Error())

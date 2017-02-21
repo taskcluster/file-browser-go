@@ -109,7 +109,7 @@ func TestCopy(t *testing.T) {
 		t.Fatal(res.Err)
 	}
 
-	if CompareDirectory(d1, filepath.Join(d2, "copy_folder")) == false {
+	if compareDirectory(d1, filepath.Join(d2, "copy_folder")) == false {
 		t.Fatal("Directories not similar.")
 	}
 }
@@ -242,7 +242,7 @@ func TestPutFile(t *testing.T) {
 	// Write data to newpath using PutFile
 	var count int
 	for count < len(data) {
-		i := Min(CHUNKSIZE, len(data)-count)
+		i := min(CHUNKSIZE, len(data)-count)
 		w := data[count : count+i]
 		count += i
 		go PutFile("test", outChan, newpath, w)

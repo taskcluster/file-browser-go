@@ -8,7 +8,7 @@ var registryLock sync.Mutex
 
 var cmdRegistry = make(map[string]func(Command, chan<- *ResultSet))
 
-func RegisterCommand(command string, fun func(Command, chan<- *ResultSet)) {
+func registerCommand(command string, fun func(Command, chan<- *ResultSet)) {
 	registryLock.Lock()
 	defer registryLock.Unlock()
 	_, ok := cmdRegistry[command]
@@ -18,7 +18,7 @@ func RegisterCommand(command string, fun func(Command, chan<- *ResultSet)) {
 	cmdRegistry[command] = fun
 }
 
-func RunCommand(cmd Command, outChan chan<- *ResultSet) {
+func runCommand(cmd Command, outChan chan<- *ResultSet) {
 	if cmd.Id == "" {
 		outChan <- FailedResultSet("", "No id specified")
 		return

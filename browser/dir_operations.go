@@ -6,11 +6,11 @@ import (
 )
 
 func init() {
-	registerCommand("ls", onePathWrapper(List))
-	registerCommand("mkdir", onePathWrapper(MakeDirectory))
+	registerCommand("ls", onePathWrapper(ls))
+	registerCommand("mkdir", onePathWrapper(mkdir))
 }
 
-func List(id string, outChan chan<- *ResultSet, path string) {
+func ls(id string, outChan chan<- *ResultSet, path string) {
 	OpAdd()
 	defer OpDone()
 	path, valid := validateDirPath(path)
@@ -37,7 +37,7 @@ func List(id string, outChan chan<- *ResultSet, path string) {
 	}
 }
 
-func MakeDirectory(id string, outChan chan<- *ResultSet, path string) {
+func mkdir(id string, outChan chan<- *ResultSet, path string) {
 	OpAdd()
 	defer OpDone()
 	path, valid := validateDirPath(path)

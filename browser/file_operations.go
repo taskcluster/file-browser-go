@@ -6,7 +6,7 @@ import (
 )
 
 func init() {
-	registerCommand("getfile", onePathWrapper(GetFile))
+	registerCommand("getfile", onePathWrapper(getFile))
 	registerCommand("putfile", putFileWrapper())
 }
 
@@ -23,7 +23,7 @@ The file is then read in chunks of size CHUNKSIZE and
 written to stdout in msgpack format.
 */
 
-func GetFileDiv(file *os.File) int64 {
+func getFileDiv(file *os.File) int64 {
 	finfo, _ := file.Stat()
 	if finfo.Size() == 0 {
 		return 1
@@ -34,7 +34,7 @@ func GetFileDiv(file *os.File) int64 {
 	return finfo.Size()/CHUNKSIZE + 1
 }
 
-func GetFile(id string, out chan<- *ResultSet, path string) {
+func getFile(id string, out chan<- *ResultSet, path string) {
 	OpAdd()
 	defer OpDone()
 	path, valid := validateDirPath(path)
@@ -48,7 +48,7 @@ func GetFile(id string, out chan<- *ResultSet, path string) {
 		out <- FailedResultSet(id, err.Error())
 		return
 	}
-	maxdiv := GetFileDiv(file)
+	maxdiv := getFileDiv(file)
 
 	buff := make([]byte, CHUNKSIZE)
 
@@ -102,7 +102,7 @@ else append bytes to end of file.
 Return resultset
 */
 
-func PutFile(id string, outChan chan<- *ResultSet, path string, data []byte) {
+func putFile(id string, outChan chan<- *ResultSet, path string, data []byte) {
 	OpAdd()
 	defer OpDone()
 	file, err := os.OpenFile(path, os.O_CREATE|os.O_APPEND|os.O_WRONLY, 0666)

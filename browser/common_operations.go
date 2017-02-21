@@ -7,12 +7,12 @@ import (
 )
 
 func init() {
-	registerCommand("mv", twoPathWrapper(Move))
-	registerCommand("rm", onePathWrapper(Remove))
-	registerCommand("cp", twoPathWrapper(Copy))
+	registerCommand("mv", twoPathWrapper(mv))
+	registerCommand("rm", onePathWrapper(rm))
+	registerCommand("cp", twoPathWrapper(cp))
 }
 
-func Move(id string, outChan chan<- *ResultSet, oldpath, newpath string) {
+func mv(id string, outChan chan<- *ResultSet, oldpath, newpath string) {
 	OpAdd()
 	defer func() {
 		unlockPath(oldpath)
@@ -36,7 +36,7 @@ func Move(id string, outChan chan<- *ResultSet, oldpath, newpath string) {
 	}
 }
 
-func Remove(id string, outChan chan<- *ResultSet, path string) {
+func rm(id string, outChan chan<- *ResultSet, path string) {
 	OpAdd()
 	defer func() {
 		unlockPath(path)
@@ -59,7 +59,7 @@ func Remove(id string, outChan chan<- *ResultSet, path string) {
 
 // Function for copying file/dirs
 
-func Copy(id string, outChan chan<- *ResultSet, src, dest string) {
+func cp(id string, outChan chan<- *ResultSet, src, dest string) {
 	OpAdd()
 	defer OpDone()
 	odir, ndir := true, true

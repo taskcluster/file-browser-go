@@ -106,6 +106,6 @@ func putFileWrapper() func(Command, chan<- *ResultSet) {
 			outChan <- FailedResultSet(cmd.Id, "Not enough arguments")
 			return
 		}
-		PutFile(cmd.Id, outChan, cmd.Args[0], cmd.Data)
+		putFile(cmd.Id, outChan, cmd.Args[0], cmd.Data)
 	}
 }

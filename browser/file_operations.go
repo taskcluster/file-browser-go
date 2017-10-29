@@ -12,8 +12,8 @@ func init() {
 	localRegistry.registerCommand(SL_WRITE, sl_write)
 	localRegistry.registerCommand(SL_CREATE, sl_create)
 	localRegistry.registerCommand(SL_TRUNC, sl_trunc)
-	localRegistry.registerCommand(SF_OPEN, sf_open)
-	localRegistry.registerCommand(SF_CLOSE, sf_close)
+	localRegistry.registerCommand(SL_REMOVE, sl_remove)
+	localRegistry.registerCommand(SL_RENAME, sl_rename)
 }
 
 // Read
@@ -308,41 +308,36 @@ func sl_trunc(ctx context.Context, req opRequest, callback func()) opResponse {
 	return tr.GenerateErrorResponse(err)
 }
 
-// Stateful Open request
-type Sf_openRequest struct {
-	RequestID requestID   `msgpack:requestID`
-	Path      string      `msgpack:path`
-	Flags     int         `msgpack:flags`
-	Perm      os.FileMode `msgpack:perm`
+// Remove file or directory. Works like rm
+type Sl_removeRequest struct {
+	RequestID requestID `msgpack:requestID`
+	Path      string    `msgpack:path`
 }
 
-func (op *Sf_openRequest) GetRequestID() requestID {
-	return op.RequestID
+func (r *Sl_removeRequest) GetRequestID() requestID {
+	return r.RequestID
 }
 
-func (op *Sf_openRequest) GenerateErrorResponse(err error) opResponse {
-	return &Sf_openResponse{
-		RequestID: op.RequestID,
-		HandleID:  0,
+func (r *Sl_removeRequest) GenerateErrorResponse(err error) opResponse {
+	return &RemoveResponse{
+		RequestID: r.RequestID,
 		Error:     err,
 	}
 }
 
-type Sf_openResponse struct {
-	opResponseBase
+type RemoveResponse struct {
+	opResponse
 	RequestID requestID `msgpack:requestID`
-	HandleID  uint64    `msgpack:handleID`
-	Error     error     `msgpack:error`
+	Error     error     `msgpack:path`
 }
 
-func sf_open(ctx context.Context, req opRequest, callback func()) opResponse {
+func sl_remove(ctx context.Context, req opRequest, callback func()) opResponse {
 	if callback != nil {
 		defer callback()
 	}
-	op, ok := req.(*Sf_openRequest)
+	rr, ok := req.(*Sl_removeRequest)
 	if !ok {
-		return &Sf_openResponse{
-			HandleID:  0,
+		return &RemoveResponse{
 			RequestID: req.GetRequestID(),
 			Error:     errBadRequest,
 		}
@@ -350,60 +345,54 @@ func sf_open(ctx context.Context, req opRequest, callback func()) opResponse {
 
 	select {
 	case <-ctx.Done():
-		return op.GenerateErrorResponse(errInterrupted)
+		return rr.GenerateErrorResponse(errInterrupted)
 	default:
 	}
 
-	handleID, err := localFileRegistry.openFile(op.Path, op.Flags, op.Perm)
-	if err != nil {
-		return op.GenerateErrorResponse(err)
-	}
-	return &Sf_openResponse{
-		RequestID: op.RequestID,
-		HandleID:  handleID,
-	}
+	return rr.GenerateErrorResponse(os.Remove(rr.Path))
 }
 
-// Close
-type Sf_closeRequest struct {
+// Stateless rename request
+type Sl_renameRequest struct {
 	RequestID requestID `msgpack:requestID`
-	HandleID  uint64    `msgpack:handleID`
+	OldPath   string    `msgpack:oldpath`
+	NewPath   string    `msgpack:newpath`
 }
 
-func (cr *Sf_closeRequest) GetRequestID() requestID {
-	return cr.RequestID
+func (r *Sl_renameRequest) GetRequestID() requestID {
+	return r.RequestID
 }
 
-func (cr *Sf_closeRequest) GenerateErrorResponse(err error) opResponse {
-	return &Sf_closeResponse{
-		RequestID: cr.RequestID,
+func (r *Sl_renameRequest) GenerateErrorResponse(err error) opResponse {
+	return &RenameResponse{
+		RequestID: r.RequestID,
 		Error:     err,
 	}
 }
 
-type Sf_closeResponse struct {
+type RenameResponse struct {
 	opResponseBase
 	RequestID requestID `msgpack:requestID`
 	Error     error     `msgpack:error`
 }
 
-func sf_close(ctx context.Context, req opRequest, callback func()) opResponse {
+func sl_rename(ctx context.Context, req opRequest, callback func()) opResponse {
 	if callback != nil {
 		defer callback()
 	}
-	cr, ok := req.(*Sf_closeRequest)
+	rr, ok := req.(*Sl_renameRequest)
 	if !ok {
-		return &Sf_closeResponse{
-			RequestID: cr.GetRequestID(),
+		return &RenameResponse{
+			RequestID: req.GetRequestID(),
 			Error:     errBadRequest,
 		}
 	}
 
 	select {
 	case <-ctx.Done():
-		return cr.GenerateErrorResponse(errInterrupted)
+		return rr.GenerateErrorResponse(errInterrupted)
 	default:
 	}
 
-	return cr.GenerateErrorResponse(localFileRegistry.closeFile(cr.HandleID))
+	return rr.GenerateErrorResponse(os.Rename(rr.OldPath, rr.NewPath))
 }

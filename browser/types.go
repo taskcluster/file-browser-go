@@ -26,9 +26,11 @@ const (
 	SF_CLOSE
 	SF_READDIR
 	SF_STAT
+
+	OP_INTR
 )
 
-// Browser is operating in stateless mode
+// If set, browser will allow stateful operations
 var SF_SET bool = false
 
 var (

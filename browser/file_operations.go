@@ -14,6 +14,7 @@ func init() {
 	localRegistry.registerCommand(SL_TRUNC, sl_trunc)
 	localRegistry.registerCommand(SL_REMOVE, sl_remove)
 	localRegistry.registerCommand(SL_RENAME, sl_rename)
+	localRegistry.registerCommand(SL_STAT, sl_stat)
 }
 
 // Read
@@ -395,4 +396,58 @@ func sl_rename(ctx context.Context, req opRequest, callback func()) opResponse {
 	}
 
 	return rr.GenerateErrorResponse(os.Rename(rr.OldPath, rr.NewPath))
+}
+
+// Stat
+type Sl_statRequest struct {
+	RequestID requestID `msgpack:requestID`
+	Path      string    `msgpack:path`
+}
+
+func (s *Sl_statRequest) GetRequestID() requestID {
+	return s.RequestID
+}
+
+func (s *Sl_statRequest) GenerateErrorResponse(err error) opResponse {
+	return &StatResponse{
+		RequestID: s.RequestID,
+		Error:     err,
+	}
+}
+
+type StatResponse struct {
+	opResponseBase
+	RequestID requestID `msgpack:requestID`
+	Attr      *attr     `msgpack:attr,omitempty`
+	Error     error     `msgpack:error,omitempty`
+}
+
+func sl_stat(ctx context.Context, req opRequest, callback func()) opResponse {
+	if callback != nil {
+		defer callback()
+	}
+	sr, ok := req.(*Sl_statRequest)
+	if !ok {
+		return &StatResponse{
+			RequestID: req.GetRequestID(),
+			Error:     errBadRequest,
+		}
+	}
+
+	select {
+	case <-ctx.Done():
+		return sr.GenerateErrorResponse(errInterrupted)
+	default:
+	}
+
+	attr, err := getAttr(sr.Path)
+	if err != nil {
+		return sr.GenerateErrorResponse(err)
+	}
+
+	return &StatResponse{
+		RequestID: sr.RequestID,
+		Attr:      &attr,
+	}
+
 }

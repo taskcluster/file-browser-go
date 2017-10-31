@@ -5,7 +5,7 @@ import (
 	"os"
 )
 
-const defaultFrameSize = 1024
+const defaultBlockSize = 4096 //operate of 4kb blocks
 
 func init() {
 	localRegistry.registerCommand(SL_READ, sl_read)
@@ -36,7 +36,7 @@ func (r *Sl_readRequest) GenerateErrorResponse(err error) opResponse {
 	return &ReadResponse{
 		RequestID: r.RequestID,
 		Error:     err,
-		FrameSize: defaultFrameSize,
+		BlockSize: defaultBlockSize,
 	}
 }
 
@@ -44,7 +44,7 @@ func (r *Sl_readRequest) GenerateErrorResponse(err error) opResponse {
 type ReadResponse struct {
 	RequestID requestID `msgpack:requestID`
 	Error     error     `msgpack:error`
-	FrameSize int64     `msgpack:frameSize`
+	BlockSize int64     `msgpack:frameSize`
 	// Number of bytes in the read request
 	requestedBytes int64
 	// Handle to the file so that data can be streamed
@@ -67,7 +67,7 @@ type ReadResponseFrame struct {
 }
 
 func (r *ReadResponse) IsStreamResponse() bool {
-	return true
+	return r.Stream
 }
 
 func (r *ReadResponse) StreamToChannel(out chan<- interface{}) error {
@@ -77,8 +77,8 @@ func (r *ReadResponse) StreamToChannel(out chan<- interface{}) error {
 		_ = r.file.Close()
 	}()
 	for bytesSent != r.requestedBytes {
-		bufsize := r.FrameSize
-		if r.requestedBytes-bytesSent < r.FrameSize {
+		bufsize := r.BlockSize
+		if r.requestedBytes-bytesSent < r.BlockSize {
 			bufsize = r.requestedBytes - bytesSent
 		}
 
@@ -107,6 +107,12 @@ func (r *ReadResponse) StreamToChannel(out chan<- interface{}) error {
 		}
 	}
 	return nil
+}
+
+func (r *ReadResponse) closeFile() {
+	if r.file != nil {
+		_ = r.file.Close()
+	}
 }
 
 func sl_read(ctx context.Context, req opRequest, callback func()) opResponse {
@@ -140,11 +146,12 @@ func sl_read(ctx context.Context, req opRequest, callback func()) opResponse {
 	// Calling StreamToChannel should safely stream the data out
 	return &ReadResponse{
 		RequestID:      rr.RequestID,
-		FrameSize:      defaultFrameSize,
+		BlockSize:      defaultBlockSize,
 		requestedBytes: rr.BytesToRead,
 		Stream:         true,
 		// The offset for the file has been set
 		file: file,
+		ctx:  ctx,
 	}
 }
 

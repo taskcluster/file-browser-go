@@ -18,18 +18,30 @@ func DecodeRequestMessage(m *Message) opRequest {
 	var req opRequest
 
 	switch m.code {
-	case SL_READ:
-		req = &Sl_readRequest{}
 	case SL_READDIR:
 		req = &Sl_readdirRequest{}
 	case SF_READDIR:
 		req = &Sf_readdirRequest{}
+	case SL_MKDIR:
+		req = &Sl_mkdirRequest{}
+	case SL_READ:
+		req = &Sl_readRequest{}
+	case SL_WRITE:
+		req = &Sl_writeRequest{}
+	case SL_CREATE:
+		req = &Sl_createRequest{}
+	case SL_TRUNC:
+		req = &Sl_truncRequest{}
+	case SL_STAT:
+		req = &Sl_statRequest{}
+	case SL_REMOVE:
+		req = &Sl_removeRequest{}
+	case SL_RENAME:
+		req = &Sl_renameRequest{}
 	case SF_OPEN:
 		req = &Sf_openRequest{}
 	case SF_CLOSE:
 		req = &Sf_closeRequest{}
-	case SL_MKDIR:
-		req = &Sl_mkdirRequest{}
 	}
 	err = msgpack.Unmarshal(m.buf, &req)
 	if err != nil {

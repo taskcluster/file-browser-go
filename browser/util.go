@@ -35,3 +35,35 @@ func getAttrWithFileInfo(f os.FileInfo) (attr, error) {
 		GroupID:    gid,
 	}, nil
 }
+
+func streamReadResponse(res *ReadResponse) ([]byte, error) {
+	if res == nil {
+		panic("bad request")
+	}
+
+	if !res.IsStreamResponse() {
+		return nil, res.Error
+	}
+	out := make(chan interface{}, 1)
+	done := make(chan struct{}, 1)
+	data := []byte{}
+	var err error
+
+	go func() {
+		_ = res.StreamToChannel(out)
+		close(done)
+	}()
+
+	rb := int(res.requestedBytes)
+	for err == nil && len(data) < rb {
+		rr := (<-out).(*ReadResponseFrame)
+		if rr.Bytes != 0 {
+			data = append(data, rr.Buffer...)
+		}
+		err = rr.Error
+	}
+
+	<-done
+
+	return data, err
+}

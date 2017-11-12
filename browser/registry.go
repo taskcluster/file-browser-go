@@ -1,35 +1,45 @@
 package browser
 
 import (
+	"context"
 	"sync"
 )
 
-var registryLock sync.Mutex
-
-var cmdRegistry = make(map[string]func(Command, chan<- *ResultSet))
-
-func registerCommand(command string, fun func(Command, chan<- *ResultSet)) {
-	registryLock.Lock()
-	defer registryLock.Unlock()
-	_, ok := cmdRegistry[command]
-	if ok {
-		panic("Command already registered")
-	}
-	cmdRegistry[command] = fun
+type registry struct {
+	cm map[commandCode]func(context.Context, opRequest, func()) opResponse
+	sync.RWMutex
+	op map[requestID]context.CancelFunc
 }
 
-func runCommand(cmd Command, outChan chan<- *ResultSet) {
-	if cmd.Id == "" {
-		outChan <- FailedResultSet("", "No id specified")
-		return
-	}
-	// Locking only critical section
-	registryLock.Lock()
-	fun, registered := cmdRegistry[cmd.Cmd]
-	registryLock.Unlock()
+func (r *registry) registerCommand(code commandCode, f func(context.Context, opRequest, func()) opResponse) {
+	r.Lock()
+	defer r.Unlock()
+	r.cm[code] = f
+}
 
-	if !registered {
-		panic("Command not registered")
+func (r *registry) getCommand(code commandCode) func(context.Context, opRequest, func()) opResponse {
+	r.RLock()
+	defer r.RUnlock()
+	return r.cm[code]
+}
+
+func (r *registry) register(reqID requestID, cancel context.CancelFunc) {
+	r.Lock()
+	defer r.Unlock()
+	r.op[reqID] = cancel
+}
+
+func (r *registry) unregister(reqID requestID) {
+	r.Lock()
+	defer r.Unlock()
+	delete(r.op, reqID)
+}
+
+func (r *registry) callCancelFunc(reqID requestID) {
+	r.RLock()
+	defer r.RUnlock()
+	cancel := r.op[reqID]
+	if cancel != nil {
+		cancel()
 	}
-	fun(cmd, outChan)
 }
